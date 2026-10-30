@@ -79,5 +79,8 @@ export async function attachFiles(card: Card, files: File[]): Promise<{ id: stri
   return ids
 }
 
-export const removeAttachment = (card: Card, attId: string) =>
-  emit('attachment.removed', { boardId: card.boardId, cardId: card.id, attId })
+export async function removeAttachment(card: Card, attId: string) {
+  const path = card.attachments[attId]?.path
+  if (path) await db.blobs.delete(path) // still pending: never upload it
+  return emit('attachment.removed', { boardId: card.boardId, cardId: card.id, attId })
+}

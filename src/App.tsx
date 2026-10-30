@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, getKv, listeners, setKv, useAppState, useKv, usePendingCount } from './lib/db'
@@ -8,15 +8,18 @@ import { createBoard } from './lib/actions'
 import type { BioSealed, Sealed } from './lib/crypto'
 import type { State } from './lib/model'
 import { BoardView, noFilter, type Filter } from './components/Board'
-import { CardModal } from './components/CardModal'
-import { Journal } from './components/Journal'
-import { Activity } from './components/Activity'
-import { Settings } from './components/Settings'
-import { Palette, type Command } from './components/Palette'
+import type { Command } from './components/Palette'
 import { Setup, Unlock } from './components/Lock'
 import { Icon, LabelPill, Mark, MenuItem, Popover, ago } from './components/ui'
 
 type View = 'board' | 'journal' | 'activity' | 'settings'
+
+// Secondary views load on first use; the board renders without them.
+const CardModal = lazy(() => import('./components/CardModal').then((m) => ({ default: m.CardModal })))
+const Journal = lazy(() => import('./components/Journal').then((m) => ({ default: m.Journal })))
+const Activity = lazy(() => import('./components/Activity').then((m) => ({ default: m.Activity })))
+const Settings = lazy(() => import('./components/Settings').then((m) => ({ default: m.Settings })))
+const Palette = lazy(() => import('./components/Palette').then((m) => ({ default: m.Palette })))
 
 function useTheme() {
   const theme = useKv<'system' | 'light' | 'dark'>('theme', (localStorage.getItem('theme') as any) ?? 'system')
@@ -182,12 +185,14 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
         {view === 'board' && board && <FilterBar state={state} filter={filter} setFilter={setFilter} />}
 
         <div className={`min-h-0 flex-1 ${view === 'board' ? '' : 'overflow-y-auto'}`}>
+          <Suspense fallback={null}>
           {view === 'board' && (board
             ? <BoardView state={state} boardId={board.id} filter={filter} onOpen={setCardId} />
             : <Empty onCreate={newBoard} syncing={!!token && !events.length} />)}
           {view === 'journal' && <Journal state={state} events={events} onOpen={setCardId} onPreview={(title, s, b) => setPreview({ title, state: s, boardId: b })} />}
           {view === 'activity' && <Activity state={state} onOpen={setCardId} />}
           {view === 'settings' && <Settings state={state} token={token} onLock={onLock} onReplaceToken={onReplaceToken} onPreview={(title, s) => setPreview({ title, state: s })} />}
+          </Suspense>
         </div>
 
         <nav aria-label="Main" className="grid grid-cols-4 border-t border-line bg-ground pb-[env(safe-area-inset-bottom)] sm:hidden">
@@ -200,9 +205,11 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
         </nav>
       </main>
 
+      <Suspense fallback={null}>
       {cardId && state.cards[cardId] && <CardModal state={state} events={events} cardId={cardId} onClose={() => setCardId(null)} />}
       {palette && <Palette state={state} commands={commands} onBoard={openBoard} onCard={setCardId} onClose={() => setPalette(false)} />}
       {preview && <Preview {...preview} onClose={() => setPreview(null)} />}
+      </Suspense>
     </div>
   )
 }
@@ -302,7 +309,7 @@ function Preview({ title, state, boardId, onClose }: { title: string; state: Sta
       <div className="min-h-0 flex-1 pt-3">
         {id ? <BoardView state={state} boardId={id} readOnly onOpen={setCard} /> : <p className="p-6 text-muted">No boards at this point.</p>}
       </div>
-      {card && <CardModal state={state} events={[]} cardId={card} readOnly onClose={() => setCard(null)} />}
+      {card && <Suspense fallback={null}><CardModal state={state} events={[]} cardId={card} readOnly onClose={() => setCard(null)} /></Suspense>}
     </div>
   )
 }

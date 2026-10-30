@@ -6,7 +6,7 @@ import {
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { keyAt, sortByPos } from '../lib/frac'
-import type { Card, Column, Priority, State } from '../lib/model'
+import type { Attachment, Card, Column, Priority, State } from '../lib/model'
 import { addCard, addColumn, moveCard, updateColumn } from '../lib/actions'
 import { Icon, LabelPill, MenuItem, Popover, fmtMonth, today, useAttachmentUrl } from './ui'
 
@@ -329,9 +329,14 @@ function SortableCard({ card, state, readOnly, onOpen }: { card: Card; state: St
   )
 }
 
+// Separate component so only cards with a cover open an attachment query.
+function Cover({ att }: { att: Attachment }) {
+  const { url } = useAttachmentUrl(att)
+  return url ? <img src={url} alt="" className="h-32 w-full object-cover" /> : <div className="h-32 bg-sunken" />
+}
+
 export function CardTile({ card, state, overlay }: { card: Card; state: State; overlay?: boolean }) {
   const cover = card.cover ? card.attachments[card.cover] : undefined
-  const { url } = useAttachmentUrl(cover && !cover.removed && cover.mime.startsWith('image/') ? cover : undefined)
   const checks = card.checklist.length
   const done = card.checklist.filter((i) => i.done).length
   const overdue = card.due && !card.completedAt && card.due < today()
@@ -339,7 +344,7 @@ export function CardTile({ card, state, overlay }: { card: Card; state: State; o
   const labels = card.labels.map((l) => state.labels[l]).filter((l) => l && !l.deleted)
   return (
     <article className={`cursor-pointer overflow-hidden rounded-[8px] bg-surface transition-colors hover:bg-ground ${overlay ? 'rotate-2 shadow-xl' : ''}`}>
-      {url && <img src={url} alt="" className="h-32 w-full object-cover" />}
+      {cover && !cover.removed && cover.mime.startsWith('image/') && <Cover att={cover} />}
       <div className="px-3 py-2">
         {labels.length > 0 && <div className="mb-1.5 flex flex-wrap gap-1">{labels.map((l) => <LabelPill key={l.id} label={l} small />)}</div>}
         <h3 className="text-[14px] leading-snug">{card.title}</h3>

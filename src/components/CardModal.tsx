@@ -37,7 +37,7 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); onFiles([...e.dataTransfer.files]) }}>
         <div className="flex items-start gap-3">
-          <textarea rows={1} disabled={ro} defaultValue={card.title} aria-label="Title"
+          <textarea key={card.title} rows={1} disabled={ro} defaultValue={card.title} aria-label="Title"
             className="field min-h-0 flex-1 resize-none border-transparent bg-transparent px-1 text-[20px] font-semibold leading-tight hover:border-line"
             onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== card.title) updateCard(card, { title: v }) }}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), e.currentTarget.blur())} />

@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { db } from '../lib/db'
 import { getApi } from '../lib/sync'
 import type { Attachment, Card, Label } from '../lib/model'
@@ -140,6 +138,16 @@ export function MenuItem({ onClick, children, danger }: { onClick: () => void; c
 
 const urlCache = new Map<string, Promise<string>>()
 
+/** Object URL for a synced attachment, fetched once per session and shared by every view. */
+export function attachmentUrl(att: Attachment): Promise<string> {
+  if (!urlCache.has(att.path)) {
+    urlCache.set(att.path, getApi().blobBytes(att.blob)
+      .then((b) => URL.createObjectURL(new Blob([b], { type: att.mime })))
+      .catch((e) => { urlCache.delete(att.path); throw e }))
+  }
+  return urlCache.get(att.path)!
+}
+
 export function useAttachmentUrl(att: Attachment | undefined): { url: string | null; pending: boolean } {
   const pendingBlob = useLiveQuery(() => (att ? db.blobs.get(att.path) : undefined), [att?.path])
   const [url, setUrl] = useState<string | null>(null)
@@ -151,36 +159,14 @@ export function useAttachmentUrl(att: Attachment | undefined): { url: string | n
       return () => URL.revokeObjectURL(u)
     }
     let live = true
-    if (!urlCache.has(att.path)) {
-      urlCache.set(att.path, (async () => {
-        const b = await getApi().blobBytes(att.blob)
-        return URL.createObjectURL(new Blob([b], { type: att.mime }))
-      })().catch((e) => { urlCache.delete(att.path); throw e }))
-    }
-    urlCache.get(att.path)!.then((u) => live && setUrl(u), () => live && setUrl(null))
+    attachmentUrl(att).then((u) => live && setUrl(u), () => live && setUrl(null))
     return () => { live = false }
   }, [att?.path, pendingBlob])
   return { url, pending: !!pendingBlob }
 }
 
-export function Markdown({ text, attachments }: { text: string; attachments: Record<string, Attachment> }) {
-  const html = useMemo(
-    // att:<id> would be stripped by the sanitizer; carry it as a fragment and resolve after render.
-    () => DOMPurify.sanitize(marked.parse(text.replace(/\(att:([\w-]+)\)/g, '(#att:$1)'), { async: false }) as string),
-    [text],
-  )
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    ref.current?.querySelectorAll<HTMLImageElement>('img[src^="#att:"]').forEach(async (img) => {
-      const id = img.getAttribute('src')!.slice(5)
-      const att = attachments[id]
-      if (!att) return
-      try {
-        const pending = await db.blobs.get(att.path)
-        const b = pending?.data ?? (await getApi().blobBytes(att.blob))
-        if (b) img.src = URL.createObjectURL(b)
-      } catch { /* offline or locked: leave the alt text */ }
-    })
-  }, [html, attachments])
-  return <div ref={ref} className="md" dangerouslySetInnerHTML={{ __html: html }} />
+const LazyMarkdown = lazy(() => import('./Markdown'))
+
+export function Markdown(props: { text: string; attachments: Record<string, Attachment> }) {
+  return <Suspense fallback={<p className="whitespace-pre-wrap">{props.text}</p>}><LazyMarkdown {...props} /></Suspense>
 }
