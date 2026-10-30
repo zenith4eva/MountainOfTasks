@@ -40,9 +40,9 @@ Any `countsAsDone` column groups cards by completion month. Header shows `Oct 20
 - Rollback bumps `epoch` in `meta.json`. Device with lower epoch drops cache + pending queue after warning with pending count, refetches.
 
 ## Attachments
-- Stored as GitHub Release assets on data repo, one release per year (`attachments-<YYYY>`). Metadata in `attachment.added` event (`name, size, mime, assetId, sha256`). Fetched with token → blob URL.
-- Fallback: commit into `attachments/<cardId>/` if release upload fails CORS (verified during build).
-- Limits: warn > 50 MB, refuse > 500 MB. Offline: blob in IndexedDB, uploaded when online, "pending upload" badge.
+- Committed into the data repo at `attachments/<cardId>/<attId>-<name>`. Metadata in `attachment.added` event (`name, size, mime, path, blob, sha256`; `blob` is the git blob sha). Fetched with token from `git/blobs/<sha>` (exact bytes) → blob URL.
+- Release assets were the original plan but browsers cannot upload to `uploads.github.com` (no CORS headers).
+- Limits: warn > 50 MB, refuse > 100 MB (GitHub's per-file limit). Offline: blob in IndexedDB, uploaded when online, "pending upload" badge.
 - UI: thumbnails for images, icon+size otherwise, lightbox, download, set as card cover, paste/drag-drop to attach, `![](att:<id>)` in markdown.
 - Delete soft; Settings → Storage lists orphaned assets, Purge hard-deletes.
 

@@ -1,12 +1,14 @@
 # Mountain of Tasks
 
+[![Deploy to Pages](https://github.com/zenith4eva/MountainOfTasks/actions/workflows/deploy.yml/badge.svg)](https://github.com/zenith4eva/MountainOfTasks/actions/workflows/deploy.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A personal, local-first kanban board (Trello-style) that runs as a static PWA on GitHub Pages and syncs to a **private GitHub repo** you own. No server, no third-party backend: every change is an event committed to git, so you get full history, rollback and multi-device sync for free.
 
 **Live app:** https://zenith4eva.github.io/MountainOfTasks/
 
 <p align="center">
-  <img src="docs/desktop.gif" alt="Dragging cards between columns and adding a card on desktop" width="620">
-  <img src="docs/phone.gif" alt="Adding a card and ticking a checklist item on a phone" width="200">
+  <img src="docs/desktop.webp" alt="Dragging cards between columns and adding a card on desktop" width="620">
+  <img src="docs/phone.webp" alt="Adding a card, ticking a checklist item and swiping between columns on a phone" width="200">
 </p>
 
 ## Screenshots
@@ -18,6 +20,8 @@ A personal, local-first kanban board (Trello-style) that runs as a static PWA on
 | ![Board in light theme](docs/desktop-light.png) | ![Board in dark theme](docs/desktop-dark.png) |
 
 ![Card detail with markdown description, checklist and comments](docs/desktop-card.png)
+
+![Ctrl+K palette searching cards](docs/desktop-palette.png)
 
 **Phone**
 
@@ -80,6 +84,7 @@ npm run dev
 | `npm run build` | Type-check and build to `dist/` |
 | `npm test` | Vitest unit tests (reducer, merge, fractional index, crypto) |
 | `npm run e2e` | Playwright smoke test |
+| `npm run shots` | Regenerate the screenshots and animations in `docs/` (needs Python 3 with Pillow) |
 
 The sync integration test runs against a real throwaway repo and is skipped unless both variables are set:
 
