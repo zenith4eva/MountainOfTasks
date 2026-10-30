@@ -1,0 +1,5 @@
+node_modules
+dist
+.taste-skill
+test-results
+playwright-report
