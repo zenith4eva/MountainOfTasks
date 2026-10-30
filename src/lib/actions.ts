@@ -1,13 +1,14 @@
 import { db, emit, emitMany, uid } from './db'
 import { between, sortByPos } from './frac'
 import { gitBlobSha, sha256Hex } from './crypto'
+import { t } from '../i18n'
 import { replay, type Card, type Column, type EvType, type State } from './model'
 
 export async function createBoard(name: string) {
   const boardId = uid()
   const evs: [EvType, Record<string, unknown>][] = [['board.create', { boardId, name }]]
   let pos: string | null = null
-  for (const [n, done] of [['To do', false], ['Doing', false], ['Done', true]] as const) {
+  for (const [n, done] of [[t('colTodo'), false], [t('colDoing'), false], [t('colDone'), true]] as const) {
     pos = between(pos, null)
     evs.push(['column.create', { boardId, columnId: uid(), name: n, pos, countsAsDone: done }])
   }
@@ -61,8 +62,8 @@ export const MAX_BYTES = 100 * 1024 * 1024
 export async function attachFiles(card: Card, files: File[]): Promise<{ id: string; mime: string }[]> {
   const ids: { id: string; mime: string }[] = []
   for (const f of files) {
-    if (f.size > MAX_BYTES) { alert(`${f.name} is larger than 100 MB, which GitHub will not store.`); continue }
-    if (f.size > WARN_BYTES && !confirm(`${f.name} is ${(f.size / 1048576).toFixed(0)} MB. Attach anyway?`)) continue
+    if (f.size > MAX_BYTES) { alert(t('tooLarge', { name: f.name })); continue }
+    if (f.size > WARN_BYTES && !confirm(t('largeConfirm', { name: f.name, mb: (f.size / 1048576).toFixed(0) }))) continue
     const id = uid()
     const safe = f.name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file'
     const path = `attachments/${card.id}/${id}-${safe}`

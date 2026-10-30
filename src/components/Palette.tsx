@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { State } from '../lib/model'
 import { Icon } from './ui'
+import { t } from '../i18n'
 
 export interface Command { id: string; label: string; hint?: string; run: () => void }
 
@@ -12,12 +13,12 @@ export function Palette({ state, commands, onBoard, onCard, onClose }: {
   const [sel, setSel] = useState(0)
 
   const items = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    const hit = (s: string) => !t || s.toLowerCase().includes(t)
-    const cmds = commands.filter((c) => hit(c.label)).map((c) => ({ key: c.id, label: c.label, hint: c.hint ?? 'Command', run: c.run }))
+    const query = q.trim().toLowerCase()
+    const hit = (s: string) => !query || s.toLowerCase().includes(query)
+    const cmds = commands.filter((c) => hit(c.label)).map((c) => ({ key: c.id, label: c.label, hint: c.hint ?? t('commandTag'), run: c.run }))
     const boards = Object.values(state.boards).filter((b) => !b.deleted && hit(b.name))
-      .map((b) => ({ key: b.id, label: b.name, hint: 'Board', run: () => onBoard(b.id) }))
-    const cards = t ? Object.values(state.cards).filter((c) => !c.deleted && !state.boards[c.boardId]?.deleted && (hit(c.title) || hit(c.description)))
+      .map((b) => ({ key: b.id, label: b.name, hint: t('board'), run: () => onBoard(b.id) }))
+    const cards = query ? Object.values(state.cards).filter((c) => !c.deleted && !state.boards[c.boardId]?.deleted && (hit(c.title) || hit(c.description)))
       .sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 30)
       .map((c) => ({
         key: c.id, label: c.title,
@@ -31,10 +32,10 @@ export function Palette({ state, commands, onBoard, onCard, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[12vh]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label="Command palette" className="w-full max-w-xl overflow-hidden rounded-[12px] bg-surface shadow-2xl">
+      <div role="dialog" aria-label={t('paletteLabel')} className="w-full max-w-xl overflow-hidden rounded-[12px] bg-surface shadow-2xl">
         <div className="flex items-center gap-2 border-b border-line px-4">
           <Icon name="search" className="text-muted" />
-          <input autoFocus value={q} placeholder="Search cards, boards, commands" aria-label="Search"
+          <input autoFocus value={q} placeholder={t('palettePlaceholder')} aria-label={t('search')}
             className="h-12 flex-1 bg-transparent text-[15px] outline-none"
             onChange={(e) => { setQ(e.target.value); setSel(0) }}
             onKeyDown={(e) => {
@@ -54,7 +55,7 @@ export function Palette({ state, commands, onBoard, onCard, onClose }: {
               </button>
             </li>
           ))}
-          {items.length === 0 && <li className="px-3 py-6 text-center text-muted">Nothing found.</li>}
+          {items.length === 0 && <li className="px-3 py-6 text-center text-muted">{t('nothingFound')}</li>}
         </ul>
       </div>
     </div>

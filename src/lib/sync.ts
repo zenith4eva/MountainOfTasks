@@ -2,18 +2,19 @@ import { db, getKv, setKv, device, dropCache, type StoredEv } from './db'
 import { client, ConflictError, type Client, type NewEntry } from './github'
 import { commitMessage, eventPath, merge, replay, snapshot, type Ev, type State } from './model'
 import { b64, gitBlobSha } from './crypto'
+import { t, tn } from '../i18n'
 
 let api: Client | null = null
 export const setToken = (t: string | null, repo?: string) => { api = t ? client(t, repo) : null }
 export const getApi = () => {
-  if (!api) throw new Error('Locked')
+  if (!api) throw new Error(t('locked'))
   return api
 }
 
 export const hooks = {
   /** Called before a remote rollback wipes local cache; resolves when the user has been warned. */
   onRollback: async (pending: number) => {
-    alert(`The data repo was rolled back on another device. ${pending} unsynced change(s) on this device will be discarded.`)
+    alert(tn('rollbackWarn', pending))
   },
 }
 
@@ -147,7 +148,7 @@ export const push = (message?: string) => locked(async () => {
     })
     return
   }
-  throw new Error('Could not push after 4 attempts; the branch keeps moving')
+  throw new Error(t('pushFailed'))
 })
 
 // --- history ---

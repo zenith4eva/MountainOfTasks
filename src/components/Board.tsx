@@ -8,7 +8,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { keyAt, sortByPos } from '../lib/frac'
 import type { Attachment, Card, Column, Priority, State } from '../lib/model'
 import { addCard, addColumn, moveCard, updateColumn } from '../lib/actions'
-import { Icon, LabelPill, MenuItem, Popover, fmtMonth, today, useAttachmentUrl } from './ui'
+import { Icon, LabelPill, MenuItem, Popover, fmtDay, fmtMonth, fmtMonthShort, priorityName, today, useAttachmentUrl } from './ui'
+import { t } from '../i18n'
 
 export interface Filter { labels: string[]; due: 'any' | 'overdue' | 'week' | 'none'; priority: 'any' | Priority }
 export const noFilter: Filter = { labels: [], due: 'any', priority: 'any' }
@@ -142,7 +143,7 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
           <div className="w-[284px] shrink-0">
             {newCol === null ? (
               <button className="btn btn-ghost w-full justify-start text-muted" onClick={() => setNewCol('')}>
-                <Icon name="plus" /> Add column
+                <Icon name="plus" /> {t('addColumn')}
               </button>
             ) : (
               <form className="rounded-[8px] bg-raised p-2" onSubmit={(e) => {
@@ -150,7 +151,7 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
                 if (newCol.trim()) addColumn(state, boardId, newCol.trim())
                 setNewCol(null)
               }}>
-                <input autoFocus className="field" placeholder="Column name" value={newCol}
+                <input autoFocus className="field" placeholder={t('columnName')} value={newCol}
                   onChange={(e) => setNewCol(e.target.value)} onBlur={(e) => !e.target.value && setNewCol(null)} />
               </form>
             )}
@@ -189,7 +190,7 @@ function ColumnView({ state, boardId, col, cards, allCards, readOnly, ym, setYm,
       className={`flex max-h-full w-[284px] shrink-0 flex-col rounded-[8px] bg-raised ${dimmed ? 'opacity-50' : ''}`}>
       <header className="flex items-center gap-1 px-2 pb-1 pt-2">
         {!readOnly && (
-          <button {...sortable.attributes} {...sortable.listeners} aria-label={`Reorder ${col.name}`}
+          <button {...sortable.attributes} {...sortable.listeners} aria-label={t('reorderX', { name: col.name })}
             className="cursor-grab touch-none rounded p-1 text-muted hover:bg-sunken">
             <Icon name="grip" size={14} />
           </button>
@@ -202,28 +203,28 @@ function ColumnView({ state, boardId, col, cards, allCards, readOnly, ym, setYm,
           <h2 className="flex-1 truncate px-1 text-[14px] font-semibold" onDoubleClick={() => !readOnly && setRenaming(true)}>{col.name}</h2>
         )}
         <span className={`px-1 text-xs ${over ? 'font-semibold text-negative' : 'text-muted'}`}
-          title={col.wip != null ? `Work-in-progress limit ${col.wip}` : undefined}>
+          title={col.wip != null ? t('wipTitle', { n: col.wip }) : undefined}>
           {col.countsAsDone ? cards.length : inCol.length}{col.wip != null && !col.countsAsDone ? ` / ${col.wip}` : ''}
         </span>
         {!readOnly && (
-          <Popover align="right" button={(t) => (
-            <button onClick={t} aria-label={`${col.name} options`} className="rounded p-1 text-muted hover:bg-sunken"><Icon name="more" /></button>
+          <Popover align="right" button={(toggle) => (
+            <button onClick={toggle} aria-label={t('optionsX', { name: col.name })} className="rounded p-1 text-muted hover:bg-sunken"><Icon name="more" /></button>
           )}>
             {(close) => (
               <>
-                <MenuItem onClick={() => { close(); setRenaming(true) }}>Rename</MenuItem>
+                <MenuItem onClick={() => { close(); setRenaming(true) }}>{t('rename')}</MenuItem>
                 <MenuItem onClick={() => { close(); updateColumn(boardId, col.id, { countsAsDone: !col.countsAsDone }) }}>
-                  <Icon name="check" size={14} className={col.countsAsDone ? '' : 'opacity-0'} /> Counts as done
+                  <Icon name="check" size={14} className={col.countsAsDone ? '' : 'opacity-0'} /> {t('countsAsDone')}
                 </MenuItem>
                 <MenuItem onClick={() => {
                   close()
-                  const v = prompt('Work-in-progress limit (empty for none)', col.wip?.toString() ?? '')
+                  const v = prompt(t('wipPrompt'), col.wip?.toString() ?? '')
                   if (v === null) return
                   const n = parseInt(v, 10)
                   updateColumn(boardId, col.id, { wip: Number.isFinite(n) && n > 0 ? n : null })
-                }}>Set WIP limit…</MenuItem>
+                }}>{t('setWip')}</MenuItem>
                 <MenuItem onClick={() => { close(); updateColumn(boardId, col.id, { archived: true }) }}>
-                  <Icon name="archive" size={14} /> Archive column
+                  <Icon name="archive" size={14} /> {t('archiveColumn')}
                 </MenuItem>
               </>
             )}
@@ -238,26 +239,26 @@ function ColumnView({ state, boardId, col, cards, allCards, readOnly, ym, setYm,
           {cards.map((c) => <SortableCard key={c.id} card={c} state={state} readOnly={readOnly} onOpen={onOpen} />)}
         </SortableContext>
         {col.countsAsDone && cards.length === 0 && (
-          <p className="px-1 py-3 text-center text-xs text-muted">Nothing finished in {fmtMonth(ym.y, ym.m)}</p>
+          <p className="px-1 py-3 text-center text-xs text-muted">{t('nothingFinished', { month: fmtMonth(ym.y, ym.m) })}</p>
         )}
       </div>
 
       {!readOnly && (adding ? (
         <div className="px-2 pb-2">
-          <textarea autoFocus rows={2} className="field" placeholder="Card title" value={title}
+          <textarea autoFocus rows={2} className="field" placeholder={t('cardTitle')} value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCard() }
               if (e.key === 'Escape') { setAdding(false); setTitle('') }
             }} />
           <div className="mt-1.5 flex gap-1">
-            <button className="btn btn-primary" onClick={submitCard}>Add card</button>
-            <button className="btn btn-ghost" onClick={() => { setAdding(false); setTitle('') }}>Cancel</button>
+            <button className="btn btn-primary" onClick={submitCard}>{t('addCard')}</button>
+            <button className="btn btn-ghost" onClick={() => { setAdding(false); setTitle('') }}>{t('cancel')}</button>
           </div>
         </div>
       ) : (
         <button className="btn btn-ghost m-1 justify-start text-muted" onClick={() => setAdding(true)}>
-          <Icon name="plus" /> Add a card
+          <Icon name="plus" /> {t('addACard')}
         </button>
       ))}
     </section>
@@ -281,9 +282,9 @@ function MonthNav({ ym, setYm, cards }: { ym: Ym; setYm: (ym: Ym) => void; cards
   }
   return (
     <div className="mx-2 mb-2 flex items-center justify-between rounded-[6px] bg-surface px-1 py-0.5">
-      <button className="rounded p-1 hover:bg-raised" onClick={() => step(-1)} aria-label="Previous month"><Icon name="left" size={14} /></button>
-      <Popover button={(t) => (
-        <button onClick={() => { setPickYear(null); t() }} className="rounded px-2 py-0.5 text-[13px] font-medium hover:bg-raised">
+      <button className="rounded p-1 hover:bg-raised" onClick={() => step(-1)} aria-label={t('prevMonth')}><Icon name="left" size={14} /></button>
+      <Popover button={(toggle) => (
+        <button onClick={() => { setPickYear(null); toggle() }} className="rounded px-2 py-0.5 text-[13px] font-medium hover:bg-raised">
           {fmtMonth(ym.y, ym.m)}
         </button>
       )}>
@@ -301,7 +302,7 @@ function MonthNav({ ym, setYm, cards }: { ym: Ym; setYm: (ym: Ym) => void; cards
               return (
                 <button key={m} disabled={future} onClick={() => { setYm({ y: pickYear, m }); close() }}
                   className={`rounded-[6px] px-2 py-1.5 text-left text-xs hover:bg-raised disabled:opacity-30 ${sameYm({ y: pickYear, m }, ym) ? 'bg-raised font-semibold' : ''}`}>
-                  {new Date(pickYear, m, 1).toLocaleDateString(undefined, { month: 'short' })}
+                  {fmtMonthShort(pickYear, m)}
                   <span className={`block ${n ? 'text-data' : 'text-muted'}`}>{n}</span>
                 </button>
               )
@@ -309,7 +310,7 @@ function MonthNav({ ym, setYm, cards }: { ym: Ym; setYm: (ym: Ym) => void; cards
           </div>
         )}
       </Popover>
-      <button className="rounded p-1 hover:bg-raised disabled:opacity-30" disabled={atNow} onClick={() => step(1)} aria-label="Next month">
+      <button className="rounded p-1 hover:bg-raised disabled:opacity-30" disabled={atNow} onClick={() => step(1)} aria-label={t('nextMonth')}>
         <Icon name="right" size={14} />
       </button>
     </div>
@@ -352,13 +353,13 @@ export function CardTile({ card, state, overlay }: { card: Card; state: State; o
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             {card.priority !== 'none' && (
               <span className={card.priority === 'high' ? 'font-semibold text-negative' : card.priority === 'med' ? 'text-warning' : ''}>
-                {card.priority === 'high' ? 'High' : card.priority === 'med' ? 'Medium' : 'Low'}
+                {priorityName(card.priority)}
               </span>
             )}
             {card.due && (
               <span className={`inline-flex items-center gap-1 ${overdue ? 'font-semibold text-negative' : ''}`}>
                 <Icon name="clock" size={12} />
-                {new Date(card.due + 'T00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                {fmtDay(card.due)}
               </span>
             )}
             {checks > 0 && (

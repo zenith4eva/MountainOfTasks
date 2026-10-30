@@ -10,7 +10,9 @@ import type { State } from './lib/model'
 import { BoardView, noFilter, type Filter } from './components/Board'
 import type { Command } from './components/Palette'
 import { Setup, Unlock } from './components/Lock'
-import { Icon, LabelPill, Mark, MenuItem, Popover, ago } from './components/ui'
+import { Icon, LabelPill, Mark, MenuItem, Popover } from './components/ui'
+import { ago, t, tn } from './i18n'
+import { useLang } from './components/LangGate'
 
 type View = 'board' | 'journal' | 'activity' | 'settings'
 
@@ -39,6 +41,7 @@ function useTheme() {
 
 export default function App() {
   useTheme()
+  useLang() // re-render the tree when the language changes
   const sealed = useLiveQuery(() => getKv<Sealed | null>('sealed', null), [], undefined)
   const bio = useKv<BioSealed | null>('bio', null)
   const offline = useLiveQuery(() => getKv('offline', false), [], undefined)
@@ -47,7 +50,7 @@ export default function App() {
   const [replacing, setReplacing] = useState(false)
 
   const unlock = useCallback((t: string | null) => { setToken(t); setTok(t); setReplacing(false); setNotice('') }, [])
-  const authFailed = useCallback(() => { unlock(null); setNotice('GitHub rejected the token. Paste a new one.'); setReplacing(true) }, [unlock])
+  const authFailed = useCallback(() => { unlock(null); setNotice(t('tokenRejected')); setReplacing(true) }, [unlock])
 
   if (sealed === undefined || offline === undefined) return null
   if (replacing || (!sealed && !offline)) return <Setup onDone={unlock} notice={notice} allowOffline={!replacing} />
@@ -63,7 +66,7 @@ function useSync(token: string | null, onAuthFail: () => void) {
 
   const handle = useCallback((e: unknown) => {
     if (e instanceof AuthError) return onAuthFail()
-    setError(navigator.onLine ? (e as Error).message : 'Offline')
+    setError(navigator.onLine ? (e as Error).message : t('offline'))
   }, [onAuthFail])
 
   useQuery({
@@ -101,6 +104,7 @@ function useSync(token: string | null, onAuthFail: () => void) {
 
 function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | null; onLock: () => void; onReplaceToken: () => void; onAuthFail: () => void }) {
   const { state, events } = useAppState()
+  const lang = useLang()
   const sync = useSync(token, onAuthFail)
   const [view, setView] = useState<View>('board')
   const [boardId, setBoardId] = useState<string | null>(() => localStorage.getItem('board'))
@@ -114,7 +118,7 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
 
   const openBoard = useCallback((id: string) => { setBoardId(id); localStorage.setItem('board', id); setView('board'); setFilter(noFilter) }, [])
   const newBoard = async () => {
-    const name = prompt('Board name', boards.length ? 'New board' : 'My board')?.trim()
+    const name = prompt(t('boardNamePrompt'), boards.length ? t('newBoard') : t('myBoard'))?.trim()
     if (name) openBoard(await createBoard(name))
   }
 
@@ -127,27 +131,27 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
   }, [])
 
   const commands: Command[] = useMemo(() => [
-    { id: 'new-board', label: 'New board', run: newBoard },
-    { id: 'theme', label: 'Toggle theme', run: async () => {
+    { id: 'new-board', label: t('newBoard'), run: newBoard },
+    { id: 'theme', label: t('cmdToggleTheme'), run: async () => {
       const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
       await setKv('theme', next); localStorage.setItem('theme', next)
     } },
-    { id: 'journal', label: 'Open journal', run: () => setView('journal') },
-    { id: 'activity', label: 'Open activity', run: () => setView('activity') },
-    { id: 'settings', label: 'Open settings', run: () => setView('settings') },
-    ...(token ? [{ id: 'sync', label: 'Sync now', run: () => sync.commit() }] : []),
-    ...(token ? [{ id: 'lock', label: 'Lock', run: onLock }] : []),
-    ...(board ? [{ id: 'new-card', label: `New card in ${board.name}`, run: () => {
+    { id: 'journal', label: t('cmdJournal'), run: () => setView('journal') },
+    { id: 'activity', label: t('cmdActivity'), run: () => setView('activity') },
+    { id: 'settings', label: t('cmdSettings'), run: () => setView('settings') },
+    ...(token ? [{ id: 'sync', label: t('cmdSync'), run: () => sync.commit() }] : []),
+    ...(token ? [{ id: 'lock', label: t('cmdLock'), run: onLock }] : []),
+    ...(board ? [{ id: 'new-card', label: t('cmdNewCard', { board: board.name }), run: () => {
       setView('board')
       setTimeout(() => document.querySelector<HTMLButtonElement>('section[aria-label] button.btn-ghost.m-1')?.click(), 0)
     } }] : []),
-  ], [board, token, sync.commit]) // eslint-disable-line react-hooks/exhaustive-deps
+  ], [board, token, sync.commit, lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const nav: [View, string, string][] = [['board', 'board', 'Boards'], ['journal', 'journal', 'Journal'], ['activity', 'activity', 'Activity'], ['settings', 'settings', 'Settings']]
+  const nav: [View, string, string][] = [['board', 'board', t('navBoards')], ['journal', 'journal', t('navJournal')], ['activity', 'activity', t('navActivity')], ['settings', 'settings', t('navSettings')]]
 
   return (
     <div className="flex h-full flex-col sm:flex-row">
-      <nav aria-label="Main" className="hidden w-14 shrink-0 flex-col items-center gap-1 border-r border-line py-3 sm:flex">
+      <nav aria-label={t('mainNav')} className="hidden w-14 shrink-0 flex-col items-center gap-1 border-r border-line py-3 sm:flex">
         <div className="mb-4"><Mark /></div>
         {nav.map(([v, icon, label]) => (
           <button key={v} onClick={() => setView(v)} aria-label={label} title={label} aria-current={view === v}
@@ -156,7 +160,7 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
           </button>
         ))}
         <div className="flex-1" />
-        <button onClick={() => setPalette(true)} aria-label="Search (Ctrl+K)" title="Search (Ctrl+K)" className="flex size-10 items-center justify-center rounded-[8px] text-muted hover:bg-raised hover:text-ink">
+        <button onClick={() => setPalette(true)} aria-label={t('searchShortcut')} title={t('searchShortcut')} className="flex size-10 items-center justify-center rounded-[8px] text-muted hover:bg-raised hover:text-ink">
           <Icon name="search" size={18} />
         </button>
       </nav>
@@ -165,22 +169,22 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
         <header className="flex flex-wrap items-center gap-2 px-4 pb-2 pt-3 sm:px-6">
           <div className="sm:hidden"><Mark size={26} /></div>
           {view === 'board' && (
-            <Popover button={(t) => (
-              <button onClick={t} className="flex items-center gap-1 rounded-[6px] px-1.5 py-1 text-[20px] font-semibold hover:bg-raised">
-                <h1>{board?.name ?? 'No board'}</h1><Icon name="down" size={16} className="text-muted" />
+            <Popover button={(toggle) => (
+              <button onClick={toggle} className="flex items-center gap-1 rounded-[6px] px-1.5 py-1 text-[20px] font-semibold hover:bg-raised">
+                <h1>{board?.name ?? t('noBoard')}</h1><Icon name="down" size={16} className="text-muted" />
               </button>
             )}>
               {(close) => (
                 <>
                   {boards.map((b) => <MenuItem key={b.id} onClick={() => { close(); openBoard(b.id) }}>{b.name}</MenuItem>)}
-                  <MenuItem onClick={() => { close(); newBoard() }}><Icon name="plus" size={14} /> New board</MenuItem>
+                  <MenuItem onClick={() => { close(); newBoard() }}><Icon name="plus" size={14} /> {t('newBoard')}</MenuItem>
                 </>
               )}
             </Popover>
           )}
           <div className="flex-1" />
           <SyncStatus token={token} sync={sync} />
-          <button onClick={() => setPalette(true)} className="btn btn-quiet h-8 sm:hidden" aria-label="Search"><Icon name="search" /></button>
+          <button onClick={() => setPalette(true)} className="btn btn-quiet h-8 sm:hidden" aria-label={t('search')}><Icon name="search" /></button>
         </header>
         {view === 'board' && board && <FilterBar state={state} filter={filter} setFilter={setFilter} />}
 
@@ -195,7 +199,7 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
           </Suspense>
         </div>
 
-        <nav aria-label="Main" className="grid grid-cols-4 border-t border-line bg-ground pb-[env(safe-area-inset-bottom)] sm:hidden">
+        <nav aria-label={t('mainNav')} className="grid grid-cols-4 border-t border-line bg-ground pb-[env(safe-area-inset-bottom)] sm:hidden">
           {nav.map(([v, icon, label]) => (
             <button key={v} onClick={() => setView(v)} aria-current={view === v}
               className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${view === v ? 'text-ink' : 'text-muted'}`}>
@@ -222,29 +226,29 @@ function SyncStatus({ token, sync }: { token: string | null; sync: ReturnType<ty
   const [, tick] = useState(0)
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 30_000); return () => clearInterval(t) }, [])
 
-  if (!token) return <span className="text-xs text-muted">Local only</span>
+  if (!token) return <span className="text-xs text-muted">{t('localOnly')}</span>
   const n = pending + pendingBlobs
-  const text = sync.busy ? 'Syncing…' : !sync.online ? `Offline${n ? ` · ${n} pending` : ''}` : sync.error ? sync.error : n && sync.mode === 'auto' ? `${n} pending` : lastSync ? `Synced ${ago(lastSync)}` : 'Not synced yet'
+  const text = sync.busy ? t('syncing') : !sync.online ? (n ? `${t('offline')} · ${t('pendingN', { n })}` : t('offline')) : sync.error ? sync.error : n && sync.mode === 'auto' ? t('pendingN', { n }) : lastSync ? t('syncedAgo', { ago: ago(lastSync) }) : t('notSynced')
 
   if (sync.mode === 'manual' && n) {
     return (
-      <Popover align="right" button={(t) => (
-        <button className="btn btn-primary h-8" onClick={async () => { setMsg(await pendingMessage()); t() }}>
-          Commit <span className="rounded-full bg-on-accent/20 px-1.5 text-xs">{n}</span>
+      <Popover align="right" button={(toggle) => (
+        <button className="btn btn-primary h-8" onClick={async () => { setMsg(await pendingMessage()); toggle() }}>
+          {t('commit')} <span className="rounded-full bg-on-accent/20 px-1.5 text-xs">{n}</span>
         </button>
       )}>
         {(close) => (
           <form className="w-80 p-2" onSubmit={(e) => { e.preventDefault(); close(); sync.commit(msg) }}>
-            <label className="mb-1 block text-xs font-medium text-muted" htmlFor="commit-msg">Commit message</label>
+            <label className="mb-1 block text-xs font-medium text-muted" htmlFor="commit-msg">{t('commitMessage')}</label>
             <textarea id="commit-msg" rows={3} className="field" value={msg} onChange={(e) => setMsg(e.target.value)} />
-            <button className="btn btn-primary mt-2 w-full justify-center" disabled={sync.busy}>Commit {n} change{n > 1 ? 's' : ''}</button>
+            <button className="btn btn-primary mt-2 w-full justify-center" disabled={sync.busy}>{tn('commitN', n)}</button>
           </form>
         )}
       </Popover>
     )
   }
   return (
-    <button onClick={() => sync.commit()} title="Sync now" className={`inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-xs hover:bg-raised ${sync.error && sync.online ? 'text-negative' : 'text-muted'}`}>
+    <button onClick={() => sync.commit()} title={t('cmdSync')} className={`inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-xs hover:bg-raised ${sync.error && sync.online ? 'text-negative' : 'text-muted'}`}>
       <Icon name="cloud" size={14} />{text}
     </button>
   )
@@ -265,13 +269,13 @@ function FilterBar({ state, filter, setFilter }: { state: State; filter: Filter;
           </button>
         )
       })}
-      <select className="field h-7 w-auto shrink-0 text-xs" value={filter.due} aria-label="Due filter" onChange={(e) => setFilter({ ...filter, due: e.target.value as Filter['due'] })}>
-        <option value="any">Any due date</option><option value="overdue">Overdue</option><option value="week">Due within a week</option><option value="none">No due date</option>
+      <select className="field h-7 w-auto shrink-0 text-xs" value={filter.due} aria-label={t('dueFilter')} onChange={(e) => setFilter({ ...filter, due: e.target.value as Filter['due'] })}>
+        <option value="any">{t('anyDue')}</option><option value="overdue">{t('overdue')}</option><option value="week">{t('dueWeek')}</option><option value="none">{t('noDue')}</option>
       </select>
-      <select className="field h-7 w-auto shrink-0 text-xs" value={filter.priority} aria-label="Priority filter" onChange={(e) => setFilter({ ...filter, priority: e.target.value as Filter['priority'] })}>
-        <option value="any">Any priority</option><option value="high">High</option><option value="med">Medium</option><option value="low">Low</option><option value="none">No priority</option>
+      <select className="field h-7 w-auto shrink-0 text-xs" value={filter.priority} aria-label={t('priorityFilter')} onChange={(e) => setFilter({ ...filter, priority: e.target.value as Filter['priority'] })}>
+        <option value="any">{t('anyPriority')}</option><option value="high">{t('high')}</option><option value="med">{t('medium')}</option><option value="low">{t('low')}</option><option value="none">{t('noPriority')}</option>
       </select>
-      {active ? <button className="shrink-0 text-xs text-muted underline" onClick={() => setFilter(noFilter)}>Clear</button> : null}
+      {active ? <button className="shrink-0 text-xs text-muted underline" onClick={() => setFilter(noFilter)}>{t('clear')}</button> : null}
     </div>
   )
 }
@@ -280,9 +284,9 @@ function Empty({ onCreate, syncing }: { onCreate: () => void; syncing: boolean }
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
       <Mark size={48} />
-      <h2 className="text-[20px] font-semibold">{syncing ? 'Fetching your boards…' : 'The mountain is empty'}</h2>
-      <p className="max-w-sm text-muted">Boards hold columns, columns hold cards. Start with one; To do, Doing and Done are set up for you.</p>
-      <button className="btn btn-primary" onClick={onCreate}><Icon name="plus" /> Create a board</button>
+      <h2 className="text-[20px] font-semibold">{syncing ? t('fetchingBoards') : t('emptyTitle')}</h2>
+      <p className="max-w-sm text-muted">{t('emptyBody')}</p>
+      <button className="btn btn-primary" onClick={onCreate}><Icon name="plus" /> {t('createBoard')}</button>
     </div>
   )
 }
@@ -297,17 +301,17 @@ function Preview({ title, state, boardId, onClose }: { title: string; state: Sta
     return () => window.removeEventListener('keydown', k)
   }, [card, onClose])
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-ground" role="dialog" aria-label="Read-only preview">
+    <div className="fixed inset-0 z-40 flex flex-col bg-ground" role="dialog" aria-label={t('readOnlyPreview')}>
       <header className="flex flex-wrap items-center gap-3 bg-accent px-4 py-2 text-on-accent sm:px-6">
-        <span className="font-semibold">Read-only</span>
+        <span className="font-semibold">{t('readOnly')}</span>
         <span className="min-w-0 flex-1 truncate opacity-80">{title}</span>
-        <select className="field h-8 w-auto" value={id} onChange={(e) => setId(e.target.value)} aria-label="Board">
+        <select className="field h-8 w-auto" value={id} onChange={(e) => setId(e.target.value)} aria-label={t('board')}>
           {boards.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
-        <button className="btn h-8 bg-on-accent/15" onClick={onClose}>Close</button>
+        <button className="btn h-8 bg-on-accent/15" onClick={onClose}>{t('close')}</button>
       </header>
       <div className="min-h-0 flex-1 pt-3">
-        {id ? <BoardView state={state} boardId={id} readOnly onOpen={setCard} /> : <p className="p-6 text-muted">No boards at this point.</p>}
+        {id ? <BoardView state={state} boardId={id} readOnly onOpen={setCard} /> : <p className="p-6 text-muted">{t('noBoardsAtPoint')}</p>}
       </div>
       {card && <Suspense fallback={null}><CardModal state={state} events={[]} cardId={card} readOnly onClose={() => setCard(null)} /></Suspense>}
     </div>

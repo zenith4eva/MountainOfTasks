@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { State } from '../lib/model'
 import { fmtDate } from './ui'
+import { t, tn } from '../i18n'
 
 const DAY = 864e5
 const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -37,15 +38,15 @@ export function Activity({ state, onOpen }: { state: State; onOpen: (cardId: str
   return (
     <div className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
       <div className="flex items-baseline justify-between pb-4 pt-2">
-        <h1 className="text-[24px] font-semibold">Activity</h1>
-        <select className="field w-auto" value={year} onChange={(e) => { setYear(+e.target.value); setDay(null) }} aria-label="Year">
+        <h1 className="text-[24px] font-semibold">{t('navActivity')}</h1>
+        <select className="field w-auto" value={year} onChange={(e) => { setYear(+e.target.value); setDay(null) }} aria-label={t('year')}>
           {years.map((y) => <option key={y}>{y}</option>)}
         </select>
       </div>
       <div className="rounded-[8px] bg-surface p-5">
-        <p className="mb-4"><span className="text-[30px] font-semibold">{yearTotal}</span> <span className="text-muted">cards completed in {year}</span></p>
+        <p className="mb-4"><span className="text-[30px] font-semibold">{yearTotal}</span> <span className="text-muted">{tn('completedInYear', yearTotal, { year })}</span></p>
         <div className="scroll-x pb-2">
-          <div className="flex gap-[3px]" role="grid" aria-label={`Completions in ${year}`}>
+          <div className="flex gap-[3px]" role="grid" aria-label={t('completionsIn', { year })}>
             {weeks.map((w, i) => (
               <div key={i} className="flex flex-col gap-[3px]" role="row">
                 {w.map((d) => {
@@ -53,7 +54,7 @@ export function Activity({ state, onOpen }: { state: State; onOpen: (cardId: str
                   const n = byDay.get(k)?.length ?? 0
                   const out = d.getFullYear() !== year
                   return (
-                    <button key={k} role="gridcell" disabled={out} aria-label={`${fmtDate(d.getTime())}: ${n} completed`} title={`${fmtDate(d.getTime())}: ${n}`}
+                    <button key={k} role="gridcell" disabled={out} aria-label={t('dayCompleted', { date: fmtDate(d.getTime()), n })} title={t('dayCompleted', { date: fmtDate(d.getTime()), n })}
                       onClick={() => setDay(k)}
                       className={`size-[13px] rounded-[3px] ${out ? 'invisible' : ''} ${day === k ? 'ring-2 ring-ink ring-offset-1 ring-offset-surface' : ''} ${k === todayKey ? 'outline outline-1 outline-ink/40' : ''}`}
                       style={{ background: fills[level(n)] }} />
@@ -64,12 +65,12 @@ export function Activity({ state, onOpen }: { state: State; onOpen: (cardId: str
           </div>
         </div>
         <div className="mt-2 flex items-center gap-1 text-xs text-muted">
-          Less {fills.map((f, i) => <span key={i} className="size-[11px] rounded-[3px]" style={{ background: f }} />)} More
+          {t('less')} {fills.map((f, i) => <span key={i} className="size-[11px] rounded-[3px]" style={{ background: f }} />)} {t('more')}
         </div>
       </div>
       {day && (
         <section className="mt-6">
-          <h2 className="mb-2 font-semibold">{fmtDate(new Date(day + 'T00:00').getTime())} · {sel.length} completed</h2>
+          <h2 className="mb-2 font-semibold">{t('dayHeading', { date: fmtDate(new Date(day + 'T00:00').getTime()), n: sel.length })}</h2>
           {sel.length ? (
             <ul className="overflow-hidden rounded-[8px] bg-surface">
               {sel.map((c) => (
@@ -81,7 +82,7 @@ export function Activity({ state, onOpen }: { state: State; onOpen: (cardId: str
                 </li>
               ))}
             </ul>
-          ) : <p className="text-muted">Nothing finished that day.</p>}
+          ) : <p className="text-muted">{t('nothingThatDay')}</p>}
         </section>
       )}
     </div>

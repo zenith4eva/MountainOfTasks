@@ -1,3 +1,5 @@
+import { t } from '../i18n'
+
 const enc = new TextEncoder()
 const dec = new TextDecoder()
 
@@ -70,7 +72,7 @@ async function prfEval(credId: Uint8Array, prfSalt: Uint8Array): Promise<ArrayBu
     },
   })) as PublicKeyCredential | null
   const r = (a?.getClientExtensionResults() as any)?.prf?.results?.first
-  if (!r) throw new Error('This authenticator does not support the PRF extension')
+  if (!r) throw new Error(t('bioNoPrfAuth'))
   return r
 }
 
@@ -86,8 +88,8 @@ export async function enrollBiometric(secret: string): Promise<BioSealed> {
       extensions: { prf: {} } as AuthenticationExtensionsClientInputs,
     },
   })) as PublicKeyCredential | null
-  if (!cred) throw new Error('Passkey creation cancelled')
-  if (!(cred.getClientExtensionResults() as any)?.prf?.enabled) throw new Error('This device does not support passkey PRF')
+  if (!cred) throw new Error(t('bioCancelled'))
+  if (!(cred.getClientExtensionResults() as any)?.prf?.enabled) throw new Error(t('bioNoPrf'))
   const credId = new Uint8Array(cred.rawId)
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const sealed = await seal(await prfKey(await prfEval(credId, prfSalt), salt), salt, secret)

@@ -72,6 +72,11 @@ body {
   font-variant-numeric: tabular-nums;
   overscroll-behavior: none;
 }
+/* Geist has no CJK glyphs; name the native face per language so Han characters get the right regional forms. */
+html:lang(ja) body { font-family: 'Geist Variable', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', Meiryo, system-ui, sans-serif; }
+html:lang(ko) body { font-family: 'Geist Variable', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif; }
+html:lang(zh-CN) body { font-family: 'Geist Variable', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif; }
+html:lang(zh-TW) body { font-family: 'Geist Variable', 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', system-ui, sans-serif; }
 :focus-visible { outline: 2px solid var(--data); outline-offset: 2px; }
 ::selection { background: color-mix(in srgb, var(--data) 25%, transparent); }
 

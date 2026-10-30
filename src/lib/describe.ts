@@ -1,44 +1,49 @@
 import { apply, emptyState, evOrder, type Ev, type State } from './model'
+import { fmtDay, t } from '../i18n'
+
+const PRIORITY_KEY = { none: 'noPriority', low: 'low', med: 'medium', high: 'high' } as const
+export const priorityName = (p: keyof typeof PRIORITY_KEY) => t(PRIORITY_KEY[p] ?? 'noPriority')
 
 export function describeEvent(e: Ev, s: State): string {
   const p = e.payload
-  const card = `"${s.cards[p.cardId]?.title ?? p.title ?? 'card'}"`
-  const col = (id: string) => s.boards[p.boardId]?.columns[id]?.name ?? 'column'
+  const card = s.cards[p.cardId]?.title ?? p.title ?? t('defCard')
+  const col = (id: string) => s.boards[p.boardId]?.columns[id]?.name ?? t('defColumn')
   switch (e.type) {
-    case 'board.create': return `Created board "${p.name}"`
-    case 'board.update': return p.fields.deleted ? 'Deleted board' : p.fields.deleted === false ? 'Restored board' : `Renamed board to "${p.fields.name}"`
-    case 'column.create': return `Added column "${p.name}"`
+    case 'board.create': return t('dBoardCreated', { name: p.name })
+    case 'board.update':
+      return p.fields.deleted ? t('dBoardDeleted') : p.fields.deleted === false ? t('dBoardRestored') : t('dBoardRenamed', { name: p.fields.name })
+    case 'column.create': return t('dColAdded', { name: p.name })
     case 'column.update': {
       const f = p.fields
-      if ('name' in f) return `Renamed column to "${f.name}"`
-      if ('archived' in f) return `${f.archived ? 'Archived' : 'Unarchived'} column "${col(p.columnId)}"`
-      if ('countsAsDone' in f) return `"${col(p.columnId)}" ${f.countsAsDone ? 'now counts' : 'no longer counts'} as done`
-      if ('wip' in f) return `Set WIP limit of "${col(p.columnId)}" to ${f.wip ?? 'none'}`
-      return `Reordered column "${col(p.columnId)}"`
+      const name = col(p.columnId)
+      if ('name' in f) return t('dColRenamed', { name: f.name })
+      if ('archived' in f) return t(f.archived ? 'dColArchived' : 'dColUnarchived', { name })
+      if ('countsAsDone' in f) return t(f.countsAsDone ? 'dColDoneOn' : 'dColDoneOff', { name })
+      if ('wip' in f) return t('dColWip', { name, n: f.wip ?? t('none') })
+      return t('dColReordered', { name })
     }
-    case 'card.create': return `Added ${card} to ${col(p.columnId)}`
-    case 'card.move': return `Moved ${card} to ${col(p.columnId)}`
+    case 'card.create': return t('dCardAdded', { card, col: col(p.columnId) })
+    case 'card.move': return t('dCardMoved', { card, col: col(p.columnId) })
     case 'card.update': {
       const f = p.fields
-      if (f.deleted === true) return `Deleted ${card}`
-      if (f.deleted === false) return `Restored ${card}`
-      if ('title' in f) return `Renamed card to "${f.title}"`
-      if ('checklist' in f) return `Updated checklist on ${card}`
-      if ('labels' in f) return `Changed labels on ${card}`
-      if ('due' in f) return f.due ? `Set due date of ${card} to ${f.due}` : `Cleared due date of ${card}`
-      if ('priority' in f) return `Set priority of ${card} to ${f.priority}`
-      if ('cover' in f) return f.cover ? `Set cover on ${card}` : `Removed cover from ${card}`
-      if ('description' in f) return `Edited description of ${card}`
-      return `Edited ${card}`
+      if (f.deleted === true) return t('dCardDeleted', { card })
+      if (f.deleted === false) return t('dCardRestored', { card })
+      if ('title' in f) return t('dCardRenamed', { name: f.title })
+      if ('checklist' in f) return t('dChecklistUpdated', { card })
+      if ('labels' in f) return t('dLabelsChanged', { card })
+      if ('due' in f) return f.due ? t('dDueSet', { card, date: fmtDay(f.due) }) : t('dDueCleared', { card })
+      if ('priority' in f) return t('dPrioritySet', { card, p: priorityName(f.priority) })
+      if ('cover' in f) return t(f.cover ? 'dCoverSet' : 'dCoverRemoved', { card })
+      if ('description' in f) return t('dDescEdited', { card })
+      return t('dCardEdited', { card })
     }
-    case 'comment.add': return `Commented on ${card}: ${p.text.slice(0, 80)}`
-    case 'label.create': return `Created label "${p.name}"`
-    case 'label.update': return `Edited label "${s.labels[p.labelId]?.name ?? ''}"`
-    case 'attachment.added': return `Attached ${p.att.name} to ${card}`
-    case 'attachment.removed': return `Removed attachment from ${card}`
+    case 'comment.add': return t('dCommented', { card, text: p.text.slice(0, 80) })
+    case 'label.create': return t('dLabelCreated', { name: p.name })
+    case 'label.update': return t('dLabelEdited', { name: s.labels[p.labelId]?.name ?? '' })
+    case 'attachment.added': return t('dAttached', { name: p.att.name, card })
+    case 'attachment.removed': return t('dAttRemoved', { card })
   }
 }
-
 
 export interface Row<E extends Ev = Ev> { ev: E; ts: number; text: string }
 
@@ -46,33 +51,32 @@ export interface Row<E extends Ev = Ev> { ev: E; ts: number; text: string }
 const MERGEABLE = new Set(['labels', 'checklist', 'priority', 'due', 'cover'])
 const MERGE_WINDOW = 120_000
 
-function diffText(field: string, before: any, after: any, title: string, s: State): string {
-  const card = `"${title}"`
-  const name = (id: string) => `"${s.labels[id]?.name ?? 'label'}"`
+function diffText(field: string, before: any, after: any, card: string, s: State): string {
+  const names = (ids: string[]) => ids.map((id) => t('dLabelName', { name: s.labels[id]?.name ?? t('defLabel') })).join(t('dListSep'))
   switch (field) {
     case 'labels': {
       const b: string[] = before ?? [], a: string[] = after ?? []
       const add = a.filter((x) => !b.includes(x)), rem = b.filter((x) => !a.includes(x))
       return [
-        add.length ? `Added label ${add.map(name).join(', ')} to ${card}` : '',
-        rem.length ? `Removed label ${rem.map(name).join(', ')} from ${card}` : '',
-      ].filter(Boolean).join('; ')
+        add.length ? t('dLabelAdded', { names: names(add), card }) : '',
+        rem.length ? t('dLabelRemoved', { names: names(rem), card }) : '',
+      ].filter(Boolean).join(t('dJoin'))
     }
     case 'checklist': {
       const b: any[] = before ?? [], a: any[] = after ?? []
       const out: string[] = []
       for (const i of a) {
         const old = b.find((x) => x.id === i.id)
-        if (!old) out.push(`Added "${i.text}" to the checklist`)
-        else if (old.done !== i.done) out.push(`${i.done ? 'Checked' : 'Unchecked'} "${i.text}"`)
-        else if (old.text !== i.text) out.push(`Renamed checklist item to "${i.text}"`)
+        if (!old) out.push(t('dClAdded', { text: i.text }))
+        else if (old.done !== i.done) out.push(t(i.done ? 'dClChecked' : 'dClUnchecked', { text: i.text }))
+        else if (old.text !== i.text) out.push(t('dClRenamed', { text: i.text }))
       }
-      for (const i of b) if (!a.some((x) => x.id === i.id)) out.push(`Removed "${i.text}" from the checklist`)
-      return out.length ? `${out.join('; ')} on ${card}` : ''
+      for (const i of b) if (!a.some((x) => x.id === i.id)) out.push(t('dClRemoved', { text: i.text }))
+      return out.length ? t('dClOn', { changes: out.join(t('dJoin')), card }) : ''
     }
-    case 'priority': return before === after ? '' : `Set priority of ${card} to ${after}`
-    case 'due': return before === after ? '' : after ? `Set due date of ${card} to ${after}` : `Cleared due date of ${card}`
-    case 'cover': return before === after ? '' : after ? `Set cover on ${card}` : `Removed cover from ${card}`
+    case 'priority': return before === after ? '' : t('dPrioritySet', { card, p: priorityName(after) })
+    case 'due': return before === after ? '' : after ? t('dDueSet', { card, date: fmtDay(after) }) : t('dDueCleared', { card })
+    case 'cover': return before === after ? '' : t(after ? 'dCoverSet' : 'dCoverRemoved', { card })
   }
   return ''
 }
@@ -96,7 +100,7 @@ export function describeRows<E extends Ev>(events: E[], final: State): Row<E>[] 
       continue
     }
     const after = (step.cards[p.cardId] as any)?.[field]
-    const title = final.cards[p.cardId]?.title ?? step.cards[p.cardId]?.title ?? 'card'
+    const title = final.cards[p.cardId]?.title ?? step.cards[p.cardId]?.title ?? t('defCard')
     const key = `${p.cardId}:${field}:${e.device}`
     const last = rows.at(-1)
     if (last?.key === key && e.ts - last.ts < MERGE_WINDOW) {

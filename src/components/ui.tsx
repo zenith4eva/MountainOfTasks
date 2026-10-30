@@ -67,20 +67,10 @@ export function LabelPill({ label, small }: { label: Label; small?: boolean }) {
   )
 }
 
-export const PRIORITY: Record<Card['priority'], string> = { none: 'No priority', low: 'Low', med: 'Medium', high: 'High' }
-
-export const fmtMonth = (y: number, m: number) => new Date(y, m, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
-export const fmtDate = (ts: number) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-export const fmtTime = (ts: number) => new Date(ts).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+export const PRIORITIES: Card['priority'][] = ['none', 'low', 'med', 'high']
+export { priorityName } from '../lib/describe'
+export { fmtMonth, fmtMonthShort, fmtDate, fmtDay, fmtTime, ago } from '../i18n'
 export const fmtSize = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1048576).toFixed(1)} MB`)
-
-export function ago(ts: number) {
-  const s = Math.round((Date.now() - ts) / 1000)
-  if (s < 45) return 'just now'
-  if (s < 3600) return `${Math.round(s / 60)} min ago`
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`
-  return fmtDate(ts)
-}
 
 export const today = () => new Date().toISOString().slice(0, 10)
 
