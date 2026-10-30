@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, uid, type StoredEv } from '../lib/db'
 import { sortByPos } from '../lib/frac'
-import type { Attachment, Card, State } from '../lib/model'
-import { addComment, attachFiles, createLabel, moveCard, removeAttachment, updateCard } from '../lib/actions'
+import type { Attachment, Card, Label, State } from '../lib/model'
+import { addComment, addNewLabel, attachFiles, moveCard, removeAttachment, updateCard, updateLabel } from '../lib/actions'
 import { keyAt } from '../lib/frac'
-import { describeEvent } from './Journal'
-import { Icon, LABEL_COLORS, LabelPill, Markdown, Modal, PRIORITY, fmtSize, fmtTime, useAttachmentUrl } from './ui'
+import { describeRows } from '../lib/describe'
+import { Icon, LABEL_COLORS, LabelPill, Markdown, Modal, Popover, PRIORITY, fmtSize, fmtTime, useAttachmentUrl } from './ui'
 
 export function CardModal({ state, events, cardId, onClose, readOnly }: { state: State; events: StoredEv[]; cardId: string; onClose: () => void; readOnly?: boolean }) {
   const card = state.cards[cardId]
@@ -20,7 +20,6 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
   const board = state.boards[card.boardId]
   const columns = sortByPos(Object.values(board.columns).filter((c) => !c.archived))
   const atts = Object.values(card.attachments).filter((a) => !a.removed).sort((a, b) => a.ts - b.ts)
-  const labels = Object.values(state.labels).filter((l) => !l.deleted)
   const ro = readOnly || card.deleted
 
   const onFiles = async (files: File[]) => {
@@ -29,7 +28,7 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
     if (editing) setDesc((d) => d + ids.filter((a) => a.mime.startsWith('image/')).map((a) => `\n![](att:${a.id})`).join(''))
   }
 
-  const timeline = events.filter((e) => e.payload.cardId === cardId).sort((a, b) => b.ts - a.ts)
+  const timeline = describeRows(events.filter((e) => e.payload.cardId === cardId), state).reverse()
 
   return (
     <Modal onClose={onClose} wide label={card.title}>
@@ -152,10 +151,10 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
                 </>
               ) : (
                 <ol className="space-y-2">
-                  {timeline.map((e) => (
+                  {timeline.map(({ ev: e, text }) => (
                     <li key={e.id} className="flex gap-3 text-[13px]">
                       <span className="w-28 shrink-0 text-muted">{fmtTime(e.ts)}</span>
-                      <span className="flex-1">{describeEvent(e, state)}</span>
+                      <span className="flex-1">{text}</span>
                       <span className="text-muted">{e.device}</span>
                     </li>
                   ))}
@@ -183,25 +182,7 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
               <input type="date" disabled={ro} className="field" value={card.due ?? ''} onChange={(e) => updateCard(card, { due: e.target.value || null })} />
             </Field>
             <Field label="Labels">
-              <div className="flex flex-wrap gap-1">
-                {labels.map((l) => {
-                  const on = card.labels.includes(l.id)
-                  return (
-                    <button key={l.id} disabled={ro} aria-pressed={on} className={on ? '' : 'opacity-40 hover:opacity-80'}
-                      onClick={() => updateCard(card, { labels: on ? card.labels.filter((x) => x !== l.id) : [...card.labels, l.id] })}>
-                      <LabelPill label={l} />
-                    </button>
-                  )
-                })}
-                {!ro && (
-                  <button className="btn btn-ghost h-6 px-2 text-xs text-muted" onClick={async () => {
-                    const name = prompt('New label')?.trim()
-                    if (!name) return
-                    const id = await createLabel(name, LABEL_COLORS[labels.length % LABEL_COLORS.length])
-                    updateCard(card, { labels: [...card.labels, id] })
-                  }}><Icon name="plus" size={12} /> New</button>
-                )}
-              </div>
+              <LabelPicker card={card} state={state} ro={ro} />
             </Field>
             {card.completedAt && <Field label="Completed"><p>{fmtTime(card.completedAt)}</p></Field>}
             <Field label="Created"><p className="text-muted">{fmtTime(card.createdAt)}</p></Field>
@@ -215,6 +196,91 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
       </div>
       {lightbox && <Lightbox att={lightbox} card={card} ro={ro} onClose={() => setLightbox(null)} />}
     </Modal>
+  )
+}
+
+function Swatches({ value, onPick, name }: { value: string; onPick: (c: string) => void; name: string }) {
+  return (
+    <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={`Colour for ${name}`}>
+      {LABEL_COLORS.map((c) => (
+        <button key={c} type="button" role="radio" aria-checked={value === c} aria-label={c}
+          onClick={() => onPick(c)}
+          className={`size-6 rounded-full transition-transform hover:scale-110 ${value === c ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface' : ''}`}
+          style={{ background: c }} />
+      ))}
+    </div>
+  )
+}
+
+function LabelPicker({ card, state, ro }: { card: Card; state: State; ro: boolean }) {
+  const labels = Object.values(state.labels).filter((l) => !l.deleted)
+  const applied = card.labels.map((id) => state.labels[id]).filter((l): l is Label => !!l && !l.deleted)
+  const [colouring, setColouring] = useState<string | null>(null)
+  const [name, setName] = useState('')
+  const [colour, setColour] = useState(LABEL_COLORS[0])
+  const toggle = (id: string) =>
+    updateCard(card, { labels: card.labels.includes(id) ? card.labels.filter((x) => x !== id) : [...card.labels, id] })
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {applied.map((l) => <LabelPill key={l.id} label={l} />)}
+      {!ro && (
+        <Popover align="right" button={(t) => (
+          <button className="btn btn-ghost h-6 px-2 text-xs text-muted" onClick={() => { setColour(LABEL_COLORS[labels.length % LABEL_COLORS.length]); t() }}>
+            <Icon name={applied.length ? 'more' : 'plus'} size={12} /> {applied.length ? 'Edit' : 'Add'}
+          </button>
+        )}>
+          {() => (
+            <div className="w-72 p-1">
+              {labels.length > 0 && (
+                <ul className="mb-2 space-y-0.5">
+                  {labels.map((l) => (
+                    <li key={l.id}>
+                      <div className="flex items-center gap-2 rounded-[6px] px-1.5 py-1 hover:bg-raised">
+                        <input type="checkbox" className="size-4 accent-[var(--data)]" checked={card.labels.includes(l.id)}
+                          onChange={() => toggle(l.id)} aria-label={`Apply ${l.name}`} />
+                        <button className="flex-1 text-left" onClick={() => toggle(l.id)}><LabelPill label={l} /></button>
+                        <button aria-label={`Edit ${l.name}`} aria-expanded={colouring === l.id} title="Rename, recolour or delete"
+                          onClick={() => setColouring(colouring === l.id ? null : l.id)}
+                          className="rounded p-1 text-muted hover:bg-sunken hover:text-ink"><Icon name="more" size={14} /></button>
+                      </div>
+                      {colouring === l.id && (
+                        <div className="space-y-2 px-1.5 pb-2 pt-1">
+                          <input className="field h-8" defaultValue={l.name} aria-label={`Rename ${l.name}`}
+                            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                            onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== l.name) updateLabel(l.id, { name: v }) }} />
+                          <Swatches value={l.color} name={l.name} onPick={(c) => updateLabel(l.id, { color: c })} />
+                          <button className="btn btn-ghost h-7 px-2 text-negative" onClick={() => {
+                            const used = Object.values(state.cards).filter((c) => !c.deleted && c.labels.includes(l.id)).length
+                            if (!confirm(`Delete label "${l.name}"?${used ? ` It is on ${used} card${used > 1 ? 's' : ''}.` : ''} It stays in history.`)) return
+                            updateLabel(l.id, { deleted: true })
+                            setColouring(null)
+                          }}><Icon name="trash" size={14} /> Delete label</button>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <form className="space-y-2 rounded-[6px] bg-raised p-2" onSubmit={async (e) => {
+                e.preventDefault()
+                const n = name.trim()
+                if (!n) return
+                setName('') // clear first: also blocks a double submit while the writes run
+                await addNewLabel(card, n, colour)
+              }}>
+                <input className="field h-8" placeholder="New label" value={name} onChange={(e) => setName(e.target.value)} aria-label="New label name" />
+                <Swatches value={colour} name="the new label" onPick={setColour} />
+                <button className="btn btn-primary h-7 w-full justify-center" disabled={!name.trim()}>
+                  Create {name.trim() && <LabelPill label={{ id: '', name: name.trim(), color: colour, deleted: false }} small />}
+                </button>
+              </form>
+            </div>
+          )}
+        </Popover>
+      )}
+      {ro && applied.length === 0 && <span className="text-muted">None</span>}
+    </div>
   )
 }
 

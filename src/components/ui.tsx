@@ -110,7 +110,8 @@ export function Popover({ button, children, align = 'left' }: { button: (open: (
   useEffect(() => {
     if (!open) return
     const h = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    // document fires before window, so this keeps Escape from also closing an enclosing modal
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false) } }
     document.addEventListener('mousedown', h)
     document.addEventListener('keydown', k)
     return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k) }

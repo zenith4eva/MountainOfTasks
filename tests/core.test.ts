@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { between, keyAt, sortByPos } from '../src/lib/frac'
 import { merge, replay, commitMessage, eventPath, type Ev } from '../src/lib/model'
 import { sealWithPin, openWithPin } from '../src/lib/crypto'
+import { describeRows } from '../src/lib/describe'
 
 let n = 0
 const ev = (type: Ev['type'], payload: any, ts = ++n, device = 'A'): Ev => ({ id: `e${String(ts).padStart(5, '0')}${device}`, ts, device, type, payload })
@@ -88,6 +89,39 @@ describe('merge', () => {
     expect(commitMessage('iPhone', [mv], s)).toBe('[iPhone] move "Fix auth" → Done')
     const adds = [1, 2, 3, 4].map((i) => ev('card.create', { boardId: 'b', cardId: `n${i}`, columnId: 'todo', pos: 'a0', title: `t${i}` }, 70 + i))
     expect(commitMessage('iPhone', [mv, ...adds], s)).toBe('[iPhone] move 1 card; add 4 cards')
+  })
+})
+
+describe('history rows', () => {
+  const lbl = ev('label.create', { labelId: 'L', name: 'Project', color: '#e8eefb' }, 5)
+  const set = (labels: string[], ts: number) => ev('card.update', { boardId: 'b', cardId: 'c', fields: { labels } }, ts)
+
+  it('collapses rapid toggles into the net change', () => {
+    const evs = [...base(), lbl, set(['L'], 1000), set([], 2000), set(['L'], 3000), set([], 4000), set(['L'], 5000)]
+    const rows = describeRows(evs, replay(evs)).filter((r) => r.ev.type === 'card.update')
+    expect(rows.map((r) => r.text)).toEqual(['Added label "Project" to "Fix auth"'])
+  })
+
+  it('drops a net no-op and keeps edits far apart in time', () => {
+    const noop = [...base(), lbl, set(['L'], 1000), set([], 2000)]
+    expect(describeRows(noop, replay(noop)).filter((r) => r.ev.type === 'card.update')).toHaveLength(0)
+    const apart = [...base(), lbl, set(['L'], 1000), set([], 1000 + 5 * 60_000)]
+    expect(describeRows(apart, replay(apart)).filter((r) => r.ev.type === 'card.update').map((r) => r.text))
+      .toEqual(['Added label "Project" to "Fix auth"', 'Removed label "Project" from "Fix auth"'])
+  })
+
+  it('names checklist changes', () => {
+    const item = { id: 'i', text: 'Deploy', done: false }
+    const evs = [...base(),
+      ev('card.update', { boardId: 'b', cardId: 'c', fields: { checklist: [item] } }, 1000),
+      ev('card.update', { boardId: 'b', cardId: 'c', fields: { checklist: [{ ...item, done: true }] } }, 1000 + 5 * 60_000)]
+    expect(describeRows(evs, replay(evs)).slice(-2).map((r) => r.text))
+      .toEqual(['Added "Deploy" to the checklist on "Fix auth"', 'Checked "Deploy" on "Fix auth"'])
+  })
+
+  it('commit message counts distinct cards, not edits', () => {
+    const evs = [...base(), lbl, set(['L'], 1000), set([], 2000), set(['L'], 3000), set([], 4000)]
+    expect(commitMessage('Windows', evs.slice(4), replay(evs))).toBe('[Windows] add 1 label; edit 1 card')
   })
 })
 

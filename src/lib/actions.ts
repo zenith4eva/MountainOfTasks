@@ -1,7 +1,7 @@
 import { db, emit, emitMany, uid } from './db'
 import { between, sortByPos } from './frac'
 import { gitBlobSha, sha256Hex } from './crypto'
-import type { Card, Column, EvType, State } from './model'
+import { replay, type Card, type Column, type EvType, type State } from './model'
 
 export async function createBoard(name: string) {
   const boardId = uid()
@@ -42,6 +42,13 @@ export async function createLabel(name: string, color: string) {
   const labelId = uid()
   await emit('label.create', { labelId, name, color })
   return labelId
+}
+
+/** Create a label and put it on the card, reading the card's labels at write time (not from a stale render). */
+export async function addNewLabel(card: Card, name: string, color: string) {
+  const id = await createLabel(name, color)
+  const current = replay(await db.events.toArray()).cards[card.id]?.labels ?? card.labels
+  await updateCard(card, { labels: [...current, id] })
 }
 
 export const updateLabel = (labelId: string, fields: Record<string, unknown>) => emit('label.update', { labelId, fields })

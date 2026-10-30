@@ -205,7 +205,6 @@ export function commitMessage(device: string, events: Ev[], s: State): string {
   const col = (b: string, c: string) => s.boards[b]?.columns[c]?.name ?? 'column'
   const parts: string[] = []
   const counts = new Map<string, number>()
-  const bump = (k: string) => counts.set(k, (counts.get(k) ?? 0) + 1)
   if (events.length <= 3) {
     for (const e of events) {
       const p = e.payload
@@ -228,7 +227,14 @@ export function commitMessage(device: string, events: Ev[], s: State): string {
       'board.create': ['create', 'board'], 'board.update': ['edit', 'board'], 'label.create': ['add', 'label'],
       'label.update': ['edit', 'label'], 'attachment.added': ['attach', 'file'], 'attachment.removed': ['remove', 'file'],
     }
-    for (const e of events) bump(e.type)
+    // Count distinct things touched, so nine edits of one card read "edit 1 card".
+    const touched = new Map<string, Set<string>>()
+    for (const e of events) {
+      const p = e.payload
+      const id = p.cardId ?? p.columnId ?? p.labelId ?? p.att?.id ?? p.attId ?? p.boardId ?? e.id
+      touched.set(e.type, (touched.get(e.type) ?? new Set()).add(id))
+    }
+    for (const [t, ids] of touched) counts.set(t, ids.size)
     for (const [t, n] of counts) {
       const [verb, noun] = nouns[t] ?? [t, 'event']
       parts.push(`${verb} ${n} ${noun}${n > 1 ? 's' : ''}`)

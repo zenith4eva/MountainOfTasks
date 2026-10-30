@@ -1,50 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { StoredEv } from '../lib/db'
 import { DATA_REPO } from '../lib/github'
-import { replay, type Ev, type State } from '../lib/model'
+import { replay, type State } from '../lib/model'
+import { describeRows } from '../lib/describe'
 import { Icon, fmtTime } from './ui'
 
 const TYPES: Record<string, string> = {
   card: 'Cards', comment: 'Comments', column: 'Columns', board: 'Boards', label: 'Labels', attachment: 'Attachments',
-}
-
-export function describeEvent(e: Ev, s: State): string {
-  const p = e.payload
-  const card = `"${s.cards[p.cardId]?.title ?? p.title ?? 'card'}"`
-  const col = (id: string) => s.boards[p.boardId]?.columns[id]?.name ?? 'column'
-  switch (e.type) {
-    case 'board.create': return `Created board "${p.name}"`
-    case 'board.update': return p.fields.deleted ? 'Deleted board' : p.fields.deleted === false ? 'Restored board' : `Renamed board to "${p.fields.name}"`
-    case 'column.create': return `Added column "${p.name}"`
-    case 'column.update': {
-      const f = p.fields
-      if ('name' in f) return `Renamed column to "${f.name}"`
-      if ('archived' in f) return `${f.archived ? 'Archived' : 'Unarchived'} column "${col(p.columnId)}"`
-      if ('countsAsDone' in f) return `"${col(p.columnId)}" ${f.countsAsDone ? 'now counts' : 'no longer counts'} as done`
-      if ('wip' in f) return `Set WIP limit of "${col(p.columnId)}" to ${f.wip ?? 'none'}`
-      return `Reordered column "${col(p.columnId)}"`
-    }
-    case 'card.create': return `Added ${card} to ${col(p.columnId)}`
-    case 'card.move': return `Moved ${card} to ${col(p.columnId)}`
-    case 'card.update': {
-      const f = p.fields
-      if (f.deleted === true) return `Deleted ${card}`
-      if (f.deleted === false) return `Restored ${card}`
-      if ('title' in f) return `Renamed card to "${f.title}"`
-      if ('checklist' in f) return `Updated checklist on ${card}`
-      if ('labels' in f) return `Changed labels on ${card}`
-      if ('due' in f) return f.due ? `Set due date of ${card} to ${f.due}` : `Cleared due date of ${card}`
-      if ('priority' in f) return `Set priority of ${card} to ${f.priority}`
-      if ('cover' in f) return f.cover ? `Set cover on ${card}` : `Removed cover from ${card}`
-      if ('description' in f) return `Edited description of ${card}`
-      return `Edited ${card}`
-    }
-    case 'comment.add': return `Commented on ${card}: ${p.text.slice(0, 80)}`
-    case 'label.create': return `Created label "${p.name}"`
-    case 'label.update': return `Edited label "${s.labels[p.labelId]?.name ?? ''}"`
-    case 'attachment.added': return `Attached ${p.att.name} to ${card}`
-    case 'attachment.removed': return `Removed attachment from ${card}`
-  }
 }
 
 export function Journal({ state, events, onPreview, onOpen }: {
@@ -58,20 +20,21 @@ export function Journal({ state, events, onPreview, onOpen }: {
   const [text, setText] = useState('')
   const [limit, setLimit] = useState(200)
 
+  const all = useMemo(() => describeRows(events, state).reverse(), [events, state])
   const rows = useMemo(() => {
     const q = text.toLowerCase()
     const f0 = from ? new Date(from + 'T00:00').getTime() : -Infinity
     const t0 = to ? new Date(to + 'T23:59:59').getTime() : Infinity
-    return [...events].sort((a, b) => b.ts - a.ts).filter((e) => {
+    return all.filter(({ ev: e, text: t }) => {
       const p = e.payload
       if (board && p.boardId !== board) return false
       if (type && !e.type.startsWith(type + '.')) return false
       if (label && !(state.cards[p.cardId]?.labels.includes(label) || p.labelId === label)) return false
       if (e.ts < f0 || e.ts > t0) return false
-      if (q && !describeEvent(e, state).toLowerCase().includes(q)) return false
+      if (q && !t.toLowerCase().includes(q)) return false
       return true
     })
-  }, [events, state, board, label, type, from, to, text])
+  }, [all, state, board, label, type, from, to, text])
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16 sm:px-6">
@@ -97,11 +60,11 @@ export function Journal({ state, events, onPreview, onOpen }: {
       </div>
       <p className="mb-2 text-xs text-muted">{rows.length} events</p>
       <ol className="overflow-hidden rounded-[8px] bg-surface">
-        {rows.slice(0, limit).map((e) => (
+        {rows.slice(0, limit).map(({ ev: e, text: t }) => (
           <li key={e.id} className="group flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-4 py-2.5 last:border-0">
             <time className="w-32 shrink-0 text-xs text-muted">{fmtTime(e.ts)}</time>
             <button className="min-w-0 flex-1 text-left hover:underline disabled:no-underline" disabled={!state.cards[e.payload.cardId]}
-              onClick={() => onOpen(e.payload.cardId)}>{describeEvent(e, state)}</button>
+              onClick={() => onOpen(e.payload.cardId)}>{t}</button>
             <span className="text-xs text-muted">{e.device}{!e.synced && ' · not synced'}</span>
             <span className="flex gap-2 text-xs sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
               <button className="text-data hover:underline" onClick={() => onPreview(`As of ${fmtTime(e.ts)}`, replay(events, e.ts), e.payload.boardId)}>View at this point</button>
