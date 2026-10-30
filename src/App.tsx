@@ -71,7 +71,12 @@ function useSync(token: string | null, onAuthFail: () => void) {
 
   useQuery({
     queryKey: ['pull', token],
-    queryFn: async () => { try { await pull(); setError('') } catch (e) { handle(e) } return Date.now() },
+    queryFn: async () => {
+      // In auto mode a push that failed (offline, 5xx) is retried here; push pulls first anyway.
+      const pending = mode === 'auto' && (await db.events.where('synced').equals(0).count()) + (await db.blobs.count()) > 0
+      try { await (pending ? push() : pull()); setError('') } catch (e) { handle(e) }
+      return Date.now()
+    },
     enabled: !!token && online,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,

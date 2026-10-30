@@ -5,6 +5,14 @@ import { db } from '../lib/db'
 import type { Attachment } from '../lib/model'
 import { attachmentUrl } from './ui'
 
+// Links leave the app in a new tab: inside an installed PWA a same-tab link strands you with no back button.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A' && /^https?:/i.test(node.getAttribute('href') ?? '')) {
+    node.setAttribute('target', '_blank')
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
+
 export default function Markdown({ text, attachments }: { text: string; attachments: Record<string, Attachment> }) {
   const html = useMemo(
     // att:<id> would be stripped by the sanitizer; carry it as a fragment and resolve after render.

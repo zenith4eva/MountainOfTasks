@@ -129,10 +129,23 @@ export function MenuItem({ onClick, children, danger }: { onClick: () => void; c
 const urlCache = new Map<string, Promise<string>>()
 
 /** Object URL for a synced attachment, fetched once per session and shared by every view. */
+/** Git blob shas are content addresses, so a cached copy never goes stale; this also makes attachments work offline. */
+async function cachedBlob(att: Attachment): Promise<Blob> {
+  const fetchIt = async () => new Blob([await getApi().blobBytes(att.blob)], { type: att.mime })
+  if (!('caches' in globalThis)) return fetchIt()
+  const cache = await caches.open('attachments')
+  const key = `/attachments/${att.blob}`
+  const hit = await cache.match(key)
+  if (hit) return hit.blob()
+  const blob = await fetchIt()
+  await cache.put(key, new Response(blob, { headers: { 'Content-Type': att.mime } })).catch(() => {}) // quota full: still show it
+  return blob
+}
+
 export function attachmentUrl(att: Attachment): Promise<string> {
   if (!urlCache.has(att.path)) {
-    urlCache.set(att.path, getApi().blobBytes(att.blob)
-      .then((b) => URL.createObjectURL(new Blob([b], { type: att.mime })))
+    urlCache.set(att.path, cachedBlob(att)
+      .then((b) => URL.createObjectURL(b))
       .catch((e) => { urlCache.delete(att.path); throw e }))
   }
   return urlCache.get(att.path)!

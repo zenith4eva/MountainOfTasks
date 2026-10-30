@@ -1,5 +1,5 @@
 import { db, getKv, setKv, device, dropCache, type StoredEv } from './db'
-import { client, ConflictError, type Client, type NewEntry } from './github'
+import { client, ConflictError, DATA_REPO, type Client, type NewEntry } from './github'
 import { commitMessage, eventPath, merge, replay, snapshot, type Ev, type State } from './model'
 import { b64, gitBlobSha } from './crypto'
 import { t, tn } from '../i18n'
@@ -45,8 +45,10 @@ async function pullInner(): Promise<boolean> {
   const gh = getApi()
   const head = await gh.headSha()
   if (!head) {
+    // No branch: either an empty repo (init it) or a 404 because the repo is gone or the token lost access.
     const epoch = await getKv('epoch', 0)
     await gh.init(await metaJson(replay([]), epoch, null))
+    if (!(await gh.headSha())) throw new Error(t('errNoRepo', { repo: DATA_REPO }))
     return pullInner()
   }
   if (head === (await getKv<string | null>('headSha', null))) return false
@@ -70,15 +72,12 @@ async function pullInner(): Promise<boolean> {
     await db.files.put({ path: 'meta.json', sha: metaEntry.sha, text })
   }
 
-  for (const e of entries) {
-    if (e.type !== 'blob' || !e.path.endsWith('.jsonl') || known.get(e.path)?.sha === e.sha) continue
-    const text = await gh.blobText(e.sha)
-    const evs = parseLines(text).map((x): StoredEv => ({ ...x, synced: 1 }))
-    await db.transaction('rw', db.events, db.files, async () => {
-      await db.events.bulkPut(evs)
-      await db.files.put({ path: e.path, sha: e.sha, text })
-    })
-  }
+  const changed = entries.filter((e) => e.type === 'blob' && e.path.endsWith('.jsonl') && known.get(e.path)?.sha !== e.sha)
+  const fetched = await Promise.all(changed.map(async (e) => ({ path: e.path, sha: e.sha, text: await gh.blobText(e.sha) })))
+  await db.transaction('rw', db.events, db.files, async () => {
+    await db.events.bulkPut(fetched.flatMap((f) => parseLines(f.text).map((x): StoredEv => ({ ...x, synced: 1 }))))
+    await db.files.bulkPut(fetched)
+  })
   await setKv('headSha', head)
   await setKv('treeSha', commit.tree.sha)
   await setKv('lastSync', Date.now())
