@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { db, getKv, setKv } from '../lib/db'
+import { db, defaultDevice, getKv, setKv } from '../lib/db'
 import { DATA_REPO } from '../lib/github'
 import { MAX_FAILS, openWithBiometric, openWithPin, sealWithPin, type BioSealed, type Sealed } from '../lib/crypto'
 import { Mark } from './ui'
@@ -31,6 +31,8 @@ export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token:
   const [token, setToken] = useState('')
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
+  const [name, setName] = useState(defaultDevice)
+  useEffect(() => { getKv('device', defaultDevice()).then(setName) }, [])
   const [step, setStep] = useState<'token' | 'pin'>('token')
   const [err, setErr] = useState(notice ?? '')
   const [busy, setBusy] = useState(false)
@@ -73,6 +75,7 @@ export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token:
           await setKv('sealed', sealed)
           await setKv('pinFails', 0)
           await setKv('offline', false)
+          await setKv('device', name.trim() || defaultDevice())
           await db.kv.delete('bio')
           onDone(token.trim())
         }}>
@@ -82,6 +85,9 @@ export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token:
             <input className="field text-center text-lg tracking-[0.5em]" inputMode="numeric" maxLength={4} type="password" aria-label={t('pin')} autoFocus value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
             <input className="field text-center text-lg tracking-[0.5em]" inputMode="numeric" maxLength={4} type="password" aria-label={t('repeatPin')} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
           </div>
+          {/* Tags this device's commits and comments; the UA guess ("Windows") is rarely what people want. */}
+          <label className="mb-1 mt-4 block text-xs font-medium text-muted" htmlFor="device">{t('deviceName')}</label>
+          <input id="device" className="field" value={name} onChange={(e) => setName(e.target.value)} />
           {err && <p className="mt-2 text-negative" role="alert">{err}</p>}
           <button className="btn btn-primary mt-4 w-full justify-center" disabled={busy}>{busy ? t('encrypting') : t('saveOpen')}</button>
         </form>

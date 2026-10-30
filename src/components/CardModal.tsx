@@ -164,7 +164,8 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
             </section>
           </div>
 
-          <aside className="space-y-4">
+          {/* Phone: fields first, two per row, so they are not below the comments */}
+          <aside className="order-first grid grid-cols-2 gap-3 md:order-none md:block md:space-y-4">
             <Field label={t('column')}>
               <select disabled={ro} className="field" value={card.columnId} onChange={(e) => {
                 const to = e.target.value
@@ -182,9 +183,11 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
             <Field label={t('dueDate')}>
               <input type="date" disabled={ro} className="field" value={card.due ?? ''} onChange={(e) => updateCard(card, { due: e.target.value || null })} />
             </Field>
-            <Field label={t('labels')}>
-              <LabelPicker card={card} state={state} ro={ro} />
-            </Field>
+            <div className="col-span-2">
+              <Field label={t('labels')}>
+                <LabelPicker card={card} state={state} ro={ro} />
+              </Field>
+            </div>
             {card.completedAt && <Field label={t('completed')}><p>{fmtTime(card.completedAt)}</p></Field>}
             <Field label={t('created')}><p className="text-muted">{fmtTime(card.createdAt)}</p></Field>
             {!ro && (

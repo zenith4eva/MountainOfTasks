@@ -8,7 +8,8 @@ import { createBoard } from './lib/actions'
 import type { BioSealed, Sealed } from './lib/crypto'
 import type { State } from './lib/model'
 import { BoardView, noFilter, type Filter } from './components/Board'
-import type { Command } from './components/Palette'
+// Eager: a lazy chunk drops the keys typed right after Ctrl+K while it loads.
+import { Palette, type Command } from './components/Palette'
 import { Setup, Unlock } from './components/Lock'
 import { Icon, LabelPill, Mark, MenuItem, Popover } from './components/ui'
 import { ago, t, tn } from './i18n'
@@ -21,7 +22,6 @@ const CardModal = lazy(() => import('./components/CardModal').then((m) => ({ def
 const Journal = lazy(() => import('./components/Journal').then((m) => ({ default: m.Journal })))
 const Activity = lazy(() => import('./components/Activity').then((m) => ({ default: m.Activity })))
 const Settings = lazy(() => import('./components/Settings').then((m) => ({ default: m.Settings })))
-const Palette = lazy(() => import('./components/Palette').then((m) => ({ default: m.Palette })))
 
 function useTheme() {
   const theme = useKv<'system' | 'light' | 'dark'>('theme', (localStorage.getItem('theme') as any) ?? 'system')
@@ -263,7 +263,7 @@ function FilterBar({ state, filter, setFilter }: { state: State; filter: Filter;
       {labels.map((l) => {
         const on = filter.labels.includes(l.id)
         return (
-          <button key={l.id} aria-pressed={on} className={`shrink-0 ${on ? '' : 'opacity-50 hover:opacity-90'}`}
+          <button key={l.id} aria-pressed={on} className={`shrink-0 rounded-full ${on ? 'ring-2 ring-ink ring-offset-1 ring-offset-ground' : 'opacity-80 hover:opacity-100'}`}
             onClick={() => setFilter({ ...filter, labels: on ? filter.labels.filter((x) => x !== l.id) : [...filter.labels, l.id] })}>
             <LabelPill label={l} small />
           </button>

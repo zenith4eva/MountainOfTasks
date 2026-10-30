@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, closestCorners,
   useDroppable, useSensor, useSensors, type CollisionDetection, type DragEndEvent, type DragOverEvent, type DragStartEvent,
@@ -45,6 +45,8 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
   const [months, setMonths] = useState<Record<string, Ym>>({})
   const [drag, setDrag] = useState<{ cardId: string; columnId: string; pos: string } | null>(null)
   const [activeCol, setActiveCol] = useState<string | null>(null)
+  const scroller = useRef<HTMLDivElement>(null)
+  const [page, setPage] = useState(0)
   const [newCol, setNewCol] = useState<string | null>(null)
 
   const columns = useMemo(() => sortByPos(Object.values(board?.columns ?? {}).filter((c) => !c.archived)), [board])
@@ -131,7 +133,12 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
   return (
     <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onStart} onDragOver={onOver} onDragEnd={onEnd}
       onDragCancel={() => { setDrag(null); setActiveCol(null) }}>
-      <div className="scroll-x flex h-full items-start gap-3 px-4 pb-6 pt-1 sm:px-6">
+      <div className="relative h-full">
+      {/* Phone: one column per screen, snapping, with dots below. Snap is off while dragging so auto-scroll is not fought. */}
+      <div ref={scroller} onScroll={(e) => {
+        const el = e.currentTarget, first = el.querySelector('section')
+        if (first) setPage(Math.round(el.scrollLeft / (first.offsetWidth + 12)))
+      }} className={`scroll-x flex h-full items-start gap-3 px-4 pb-6 pt-1 sm:px-6 ${drag || activeCol ? '' : 'max-sm:snap-x max-sm:snap-mandatory max-sm:scroll-px-4'}`}>
         <SortableContext items={columns.map((c) => `col:${c.id}`)} strategy={horizontalListSortingStrategy}>
           {columns.map((col) => (
             <ColumnView key={col.id} state={state} boardId={boardId} col={col} cards={cardsOf(col)} readOnly={readOnly}
@@ -140,7 +147,7 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
           ))}
         </SortableContext>
         {!readOnly && (
-          <div className="w-[284px] shrink-0">
+          <div className="w-[284px] shrink-0 snap-start max-sm:w-[calc(100vw-52px)]">
             {newCol === null ? (
               <button className="btn btn-ghost w-full justify-start text-muted" onClick={() => setNewCol('')}>
                 <Icon name="plus" /> {t('addColumn')}
@@ -157,6 +164,16 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
             )}
           </div>
         )}
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center sm:hidden">
+        {[...columns.map((c) => c.name), ...(readOnly ? [] : [t('addColumn')])].map((name, i) => (
+          <button key={i} aria-label={name} aria-current={i === page}
+            onClick={() => scroller.current?.querySelectorAll<HTMLElement>(':scope > section, :scope > div')[i]?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })}
+            className="pointer-events-auto p-1.5">
+            <span className={`block size-2 rounded-full ${i === page ? 'bg-ink' : 'bg-control'}`} />
+          </button>
+        ))}
+      </div>
       </div>
       <DragOverlay dropAnimation={null}>
         {dragCard && <CardTile card={dragCard} state={state} overlay />}
@@ -187,7 +204,7 @@ function ColumnView({ state, boardId, col, cards, allCards, readOnly, ym, setYm,
   return (
     <section ref={sortable.setNodeRef} aria-label={col.name}
       style={{ transform: CSS.Translate.toString(sortable.transform), transition: sortable.transition }}
-      className={`flex max-h-full w-[284px] shrink-0 flex-col rounded-[8px] bg-raised ${dimmed ? 'opacity-50' : ''}`}>
+      className={`flex max-h-full w-[284px] shrink-0 snap-start flex-col rounded-[8px] bg-raised max-sm:w-[calc(100vw-52px)] ${dimmed ? 'opacity-50' : ''}`}>
       <header className="flex items-center gap-1 px-2 pb-1 pt-2">
         {!readOnly && (
           <button {...sortable.attributes} {...sortable.listeners} aria-label={t('reorderX', { name: col.name })}

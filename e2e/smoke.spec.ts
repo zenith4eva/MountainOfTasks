@@ -29,3 +29,13 @@ test('load, add card, drag, reload persists', async ({ page }) => {
   await expect(page.locator('section[aria-label="Doing"]').getByText('Climb the first ridge')).toBeVisible()
   await expect(page.locator('section[aria-label="To do"]').getByText('Climb the first ridge')).toHaveCount(0)
 })
+
+test('keys typed right after Ctrl+K reach the palette', async ({ page }) => {
+  page.on('dialog', (d) => d.accept('Smoke board'))
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Use on this device only, without sync' }).click()
+  await page.getByRole('button', { name: 'Create a board' }).click()
+  await page.keyboard.press('Control+k')
+  await page.keyboard.type('theme')
+  await expect(page.getByRole('dialog').getByRole('textbox')).toHaveValue('theme')
+})
