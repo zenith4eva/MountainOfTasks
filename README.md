@@ -35,12 +35,12 @@ A personal, local-first kanban board (Trello-style) that runs as a static PWA on
 
 - **Boards, columns, cards** with drag and drop, WIP limits, labels, due dates, priority, checklists, comments, markdown descriptions and cover images.
 - **Done columns** group completed cards by month, with a month/year picker.
-- **Attachments** (paste or drag-drop), stored in the data repo. Warns above 50 MB; refuses above 100 MB (GitHub's file limit).
+- **Attachments** (paste or drag-drop), stored in the data repo. Large screenshots are re-encoded to WebP (max 2048 px) before upload. Warns above 50 MB; refuses above 100 MB (GitHub's file limit).
 - **Offline first.** Data lives in IndexedDB; the app works with no network and syncs when it comes back.
 - **Sync** in auto mode (3 s debounce, generated commit messages like `[iPhone] move "Fix auth" → Doing`) or manual mode (pending badge, editable message).
 - **History:** contribution heatmap, per-card timeline, a filterable journal of every event, and commit list with preview, restore and force reset.
 - **`Ctrl+K` / `⌘K` palette** for cards, boards and commands.
-- **Locked token:** your GitHub token is encrypted on-device with a 4-digit PIN (PBKDF2, 600k iterations, AES-GCM) or a biometric passkey (WebAuthn PRF: Face ID, Windows Hello).
+- **Locked token:** your GitHub token is encrypted on-device with a 4- or 6-digit PIN (PBKDF2, 600k iterations, AES-GCM) or a biometric passkey (WebAuthn PRF: Face ID, Windows Hello).
 - Light and dark themes, installable on phone and desktop.
 
 ## How it works

@@ -161,3 +161,36 @@ describe('PIN crypto', () => {
     await expect(openWithPin('4321', s, 1000)).rejects.toThrow()
   })
 })
+
+describe('item-level checklist and label events', () => {
+  const cl = (itemId: string, item: any, ts: number, device = 'A') => ev('card.checklist', { boardId: 'b', cardId: 'c', itemId, item }, ts, device)
+  const lb = (labelId: string, on: boolean, ts: number, device = 'A') => ev('card.label', { boardId: 'b', cardId: 'c', labelId, on }, ts, device)
+
+  it('two devices ticking different items offline both land', () => {
+    const shared = [...base(), cl('x', { text: 'Write', done: false }, 100), cl('y', { text: 'Ship', done: false }, 101)]
+    const phone = [cl('x', { done: true }, 200, 'iPhone')]
+    const pc = [cl('y', { done: true }, 201, 'Windows')]
+    const s = replay(merge(shared, phone, pc))
+    expect(s.cards.c.checklist).toEqual([{ id: 'x', text: 'Write', done: true }, { id: 'y', text: 'Ship', done: true }])
+  })
+
+  it('rename and tick of the same item merge field by field; remove wins when later', () => {
+    const evs = [...base(), cl('x', { text: 'Write', done: false }, 100), cl('x', { text: 'Write docs' }, 200, 'iPhone'), cl('x', { done: true }, 201, 'Windows')]
+    expect(replay(evs).cards.c.checklist).toEqual([{ id: 'x', text: 'Write docs', done: true }])
+    expect(replay([...evs, cl('x', null, 300)]).cards.c.checklist).toEqual([])
+  })
+
+  it('label toggles from two devices union', () => {
+    const s = replay(merge([...base(), lb('L1', true, 100, 'iPhone')], [lb('L2', true, 100, 'Windows')]))
+    expect(s.cards.c.labels.sort()).toEqual(['L1', 'L2'])
+    expect(replay([...base(), lb('L1', true, 100), lb('L1', false, 200), lb('L1', false, 201)]).cards.c.labels).toEqual([])
+  })
+
+  it('history rows name item events like the old whole-array edits', () => {
+    const lbl = ev('label.create', { labelId: 'L', name: 'Project', color: '#e8eefb' }, 5)
+    const evs = [...base(), lbl, cl('x', { text: 'Deploy', done: false }, 1000), cl('x', { done: true }, 1000 + 5 * 60_000), lb('L', true, 1000 + 10 * 60_000)]
+    expect(describeRows(evs, replay(evs)).slice(-3).map((r) => r.text))
+      .toEqual(['Added "Deploy" to the checklist on "Fix auth"', 'Checked "Deploy" on "Fix auth"', 'Added label "Project" to "Fix auth"'])
+    expect(commitMessage('iPhone', evs.slice(4), replay(evs))).toBe('[iPhone] add 1 label; edit 1 card')
+  })
+})

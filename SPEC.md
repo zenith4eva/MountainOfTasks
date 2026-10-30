@@ -36,7 +36,7 @@ Any `countsAsDone` column groups cards by completion month. Header shows `Oct 20
 - Contribution heatmap, year picker, click day → cards completed.
 - Per-card timeline in modal.
 - Journal: chronological feed of all events, filter by board/label/type/date/text. Any row → "View repo at this point".
-- Settings → History: commit list (message, time, device, +N −M events). Per row: Preview (read-only board), Restore (new commit with old tree, safe default). Danger fold: Force reset (`main` ref moved with `force: true`, type repo name to confirm).
+- Settings → History: commit list (message, time, device). Per row: Preview (read-only board), Restore (new commit with old tree, safe default). Danger fold: Force reset (`main` ref moved with `force: true`, type repo name to confirm).
 - Rollback bumps `epoch` in `meta.json`. Device with lower epoch drops cache + pending queue after warning with pending count, refetches.
 
 ## Attachments
@@ -47,7 +47,7 @@ Any `countsAsDone` column groups cards by completion month. Header shows `Oct 20
 - Delete soft; Settings → Storage lists orphaned assets, Purge hard-deletes.
 
 ## Token security
-- 4-digit PIN → PBKDF2 600k iterations → AES-GCM key encrypts PAT. PIN per session. 5 wrong PINs wipes local token (repo untouched).
+- 4- or 6-digit PIN → PBKDF2 600k iterations → AES-GCM key encrypts PAT. PIN per session. 5 wrong PINs wipes local token (repo untouched).
 - Biometric: WebAuthn platform passkey + PRF extension derives key (Face ID / Windows Hello). PIN fallback when unsupported. Enroll from Settings.
 - On 401: re-enter token screen.
 

@@ -6,7 +6,7 @@ const dec = new TextDecoder()
 export const ITERATIONS = 600_000
 export const MAX_FAILS = 5
 
-export interface Sealed { salt: string; iv: string; ct: string }
+export interface Sealed { salt: string; iv: string; ct: string; len?: number } // len: PIN digits, 4 when absent
 
 export const b64 = (b: ArrayBuffer | Uint8Array) => {
   const u = b instanceof Uint8Array ? b : new Uint8Array(b)

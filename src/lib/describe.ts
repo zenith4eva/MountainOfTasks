@@ -37,6 +37,8 @@ export function describeEvent(e: Ev, s: State): string {
       if ('description' in f) return t('dDescEdited', { card })
       return t('dCardEdited', { card })
     }
+    case 'card.checklist': return t('dChecklistUpdated', { card })
+    case 'card.label': return t('dLabelsChanged', { card })
     case 'comment.add': return t('dCommented', { card, text: p.text.slice(0, 80) })
     case 'label.create': return t('dLabelCreated', { name: p.name })
     case 'label.update': return t('dLabelEdited', { name: s.labels[p.labelId]?.name ?? '' })
@@ -92,7 +94,8 @@ export function describeRows<E extends Ev>(events: E[], final: State): Row<E>[] 
   for (const e of [...events].sort(evOrder)) {
     const p = e.payload
     const keys = e.type === 'card.update' ? Object.keys(p.fields) : []
-    const field = keys.length === 1 && MERGEABLE.has(keys[0]) ? keys[0] : null
+    const field = e.type === 'card.checklist' ? 'checklist' : e.type === 'card.label' ? 'labels'
+      : keys.length === 1 && MERGEABLE.has(keys[0]) ? keys[0] : null
     const before = field ? structuredClone((step.cards[p.cardId] as any)?.[field]) : undefined
     apply(step, e)
     if (!field) {

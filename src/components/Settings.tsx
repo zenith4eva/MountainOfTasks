@@ -176,7 +176,7 @@ function History({ onPreview }: { onPreview: (title: string, s: State) => void }
       {commits.error && <p className="text-negative">{(commits.error as Error).message}</p>}
       <ul className="-mx-4">
         {commits.data?.map((c) => (
-          <CommitRow key={c.sha} sha={c.sha} message={c.commit.message} date={c.commit.author.date} busy={busy === c.sha}
+          <CommitRow key={c.sha} message={c.commit.message} date={c.commit.author.date} busy={busy === c.sha}
             onPreview={async () => onPreview(`${c.commit.message} · ${fmtTime(Date.parse(c.commit.author.date))}`, await previewAt(c.sha))}
             onRestore={() => doRestore(c.sha, false)} />
         ))}
@@ -200,10 +200,9 @@ function History({ onPreview }: { onPreview: (title: string, s: State) => void }
   )
 }
 
-function CommitRow({ sha, message, date, busy, onPreview, onRestore }: {
-  sha: string; message: string; date: string; busy: boolean; onPreview: () => void; onRestore: () => void
+function CommitRow({ message, date, busy, onPreview, onRestore }: {
+  message: string; date: string; busy: boolean; onPreview: () => void; onRestore: () => void
 }) {
-  const stats = useQuery({ queryKey: ['stats', sha], queryFn: () => getApi().commitStats(sha), staleTime: Infinity })
   const device = message.match(/^\[([^\]]+)\]/)?.[1]
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line px-4 py-2.5 last:border-0">
@@ -211,7 +210,6 @@ function CommitRow({ sha, message, date, busy, onPreview, onRestore }: {
         <div className="truncate">{device ? message.slice(device.length + 3) : message}</div>
         <div className="text-xs text-muted">
           {ago(Date.parse(date))}{device && ` · ${device}`}
-          {stats.data && <> · <span className="text-positive">+{stats.data.add}</span> <span className="text-negative">−{stats.data.del}</span> {t('events')}</>}
         </div>
       </div>
       <button className="btn btn-ghost h-7" onClick={onPreview}>{t('preview')}</button>

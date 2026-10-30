@@ -12,6 +12,7 @@ export type EvType =
   | 'board.create' | 'board.update'
   | 'column.create' | 'column.update'
   | 'card.create' | 'card.update' | 'card.move'
+  | 'card.checklist' | 'card.label' // one item / one label per event, so two devices editing offline both land
   | 'comment.add'
   | 'label.create' | 'label.update'
   | 'attachment.added' | 'attachment.removed'
@@ -148,6 +149,25 @@ export function apply(s: State, e: Ev): State {
       if (!now) c.completedAt = null
       break
     }
+    case 'card.checklist': {
+      const c = s.cards[p.cardId]
+      if (!c) break
+      const has = c.checklist.some((x) => x.id === p.itemId)
+      if (p.item == null) c.checklist = c.checklist.filter((x) => x.id !== p.itemId)
+      else if (!has) c.checklist = [...c.checklist, { id: p.itemId, text: '', done: false, ...p.item }]
+      else c.checklist = c.checklist.map((x) => (x.id === p.itemId ? { ...x, ...p.item } : x))
+      c.updatedAt = e.ts
+      break
+    }
+    case 'card.label': {
+      const c = s.cards[p.cardId]
+      if (!c) break
+      const has = c.labels.includes(p.labelId)
+      if (p.on && !has) c.labels = [...c.labels, p.labelId]
+      if (!p.on && has) c.labels = c.labels.filter((x) => x !== p.labelId)
+      c.updatedAt = e.ts
+      break
+    }
     case 'comment.add': {
       const c = s.cards[p.cardId]
       if (c) c.comments = [...c.comments, { id: p.commentId, ts: e.ts, device: e.device, text: p.text }]
@@ -214,6 +234,8 @@ export function commitMessage(device: string, events: Ev[], s: State): string {
         case 'card.update':
           parts.push(p.fields.deleted ? `delete ${q(card(p.cardId))}` : `edit ${q(card(p.cardId))} (${Object.keys(p.fields).join(', ')})`)
           break
+        case 'card.checklist': parts.push(`edit ${q(card(p.cardId))} (checklist)`); break
+        case 'card.label': parts.push(`edit ${q(card(p.cardId))} (labels)`); break
         case 'comment.add': parts.push(`comment on ${q(card(p.cardId))}`); break
         case 'board.create': parts.push(`create board ${q(p.name)}`); break
         case 'attachment.added': parts.push(`attach ${q(p.att.name)}`); break
@@ -232,7 +254,8 @@ export function commitMessage(device: string, events: Ev[], s: State): string {
     for (const e of events) {
       const p = e.payload
       const id = p.cardId ?? p.columnId ?? p.labelId ?? p.att?.id ?? p.attId ?? p.boardId ?? e.id
-      touched.set(e.type, (touched.get(e.type) ?? new Set()).add(id))
+      const kind = e.type === 'card.checklist' || e.type === 'card.label' ? 'card.update' : e.type
+      touched.set(kind, (touched.get(kind) ?? new Set()).add(id))
     }
     for (const [t, ids] of touched) counts.set(t, ids.size)
     for (const [t, n] of counts) {

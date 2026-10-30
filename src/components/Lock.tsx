@@ -31,6 +31,7 @@ export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token:
   const [token, setToken] = useState('')
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
+  const [len, setLen] = useState(4)
   const [name, setName] = useState(defaultDevice)
   useEffect(() => { getKv('device', defaultDevice()).then(setName) }, [])
   const [step, setStep] = useState<'token' | 'pin'>('token')
@@ -68,11 +69,11 @@ export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token:
       ) : (
         <form onSubmit={async (e) => {
           e.preventDefault()
-          if (!/^\d{4}$/.test(pin)) return setErr(t('pinFour'))
+          if (pin.length !== len) return setErr(t('pinMustBe', { n: len }))
           if (pin !== pin2) return setErr(t('pinsDiffer'))
           setBusy(true)
           const sealed = await sealWithPin(pin, token.trim())
-          await setKv('sealed', sealed)
+          await setKv('sealed', { ...sealed, len })
           await setKv('pinFails', 0)
           await setKv('offline', false)
           await setKv('device', name.trim() || defaultDevice())
@@ -81,9 +82,15 @@ export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token:
         }}>
           <h1 className="mb-1 text-[24px] font-semibold">{t('choosePin')}</h1>
           <p className="mb-5 text-muted">{t('pinHelp')}</p>
+          <div className="mb-3 flex gap-1" role="radiogroup" aria-label={t('pin')}>
+            {[4, 6].map((n) => (
+              <button key={n} type="button" role="radio" aria-checked={len === n} className={`btn h-8 ${len === n ? 'btn-primary' : 'btn-quiet'}`}
+                onClick={() => { setLen(n); setPin(''); setPin2('') }}>{t('pinLen', { n })}</button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 gap-2">
-            <input className="field text-center text-lg tracking-[0.5em]" inputMode="numeric" maxLength={4} type="password" aria-label={t('pin')} autoFocus value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
-            <input className="field text-center text-lg tracking-[0.5em]" inputMode="numeric" maxLength={4} type="password" aria-label={t('repeatPin')} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
+            <input className="field text-center text-lg tracking-[0.4em]" inputMode="numeric" maxLength={len} type="password" aria-label={t('pin')} autoFocus value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+            <input className="field text-center text-lg tracking-[0.4em]" inputMode="numeric" maxLength={len} type="password" aria-label={t('repeatPin')} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
           </div>
           {/* Tags this device's commits and comments; the UA guess ("Windows") is rarely what people want. */}
           <label className="mb-1 mt-4 block text-xs font-medium text-muted" htmlFor="device">{t('deviceName')}</label>
@@ -100,6 +107,7 @@ export function Unlock({ sealed, bio, onDone }: { sealed: Sealed; bio: BioSealed
   const [pin, setPin] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const len = sealed.len ?? 4
 
   const tryBio = async () => {
     if (!bio) return
@@ -127,9 +135,9 @@ export function Unlock({ sealed, bio, onDone }: { sealed: Sealed; bio: BioSealed
   }
   const press = (d: string) => {
     if (busy) return
-    const p = (pin + d).slice(0, 4)
+    const p = (pin + d).slice(0, len)
     setPin(p)
-    if (p.length === 4) submit(p)
+    if (p.length === len) submit(p)
   }
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -145,7 +153,7 @@ export function Unlock({ sealed, bio, onDone }: { sealed: Sealed; bio: BioSealed
       <h1 className="mb-1 text-[24px] font-semibold">{t('enterPin')}</h1>
       <p className="mb-6 text-muted">{busy ? t('unlocking') : t('unlockHelp')}</p>
       <div className="mb-6 flex justify-center gap-4" aria-live="polite" aria-label={t('digitsOf', { n: pin.length })}>
-        {[0, 1, 2, 3].map((i) => <span key={i} className={`size-3.5 rounded-full ${i < pin.length ? 'bg-ink' : 'bg-control'}`} />)}
+        {Array.from({ length: len }, (_, i) => <span key={i} className={`size-3.5 rounded-full ${i < pin.length ? 'bg-ink' : 'bg-control'}`} />)}
       </div>
       <div className="mx-auto grid max-w-64 grid-cols-3 gap-2">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (

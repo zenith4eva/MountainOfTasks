@@ -76,12 +76,6 @@ export function client(token: string, repo = DATA_REPO) {
         commit: { message: string; author: { date: string } }
       }[]
     },
-    async commitStats(sha: string) {
-      const c = await gh(`/commits/${sha}`)
-      let add = 0, del = 0
-      for (const f of c?.files ?? []) if (f.filename.endsWith('.jsonl')) { add += f.additions; del += f.deletions }
-      return { add, del }
-    },
   }
 }
 

@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, uid, type StoredEv } from '../lib/db'
 import { sortByPos } from '../lib/frac'
 import type { Attachment, Card, Label, State } from '../lib/model'
-import { addComment, addNewLabel, attachFiles, moveCard, removeAttachment, updateCard, updateLabel } from '../lib/actions'
+import { addComment, addNewLabel, attachFiles, moveCard, removeAttachment, setChecklistItem, setLabel, updateCard, updateLabel } from '../lib/actions'
 import { keyAt } from '../lib/frac'
 import { describeRows } from '../lib/describe'
 import { t, tn } from '../i18n'
@@ -87,11 +87,11 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
                 {card.checklist.map((item) => (
                   <li key={item.id} className="group flex items-center gap-2 rounded px-1 py-1 hover:bg-raised">
                     <input type="checkbox" disabled={ro} checked={item.done} className="size-4 accent-[var(--data)]"
-                      onChange={() => updateCard(card, { checklist: card.checklist.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)) })} />
+                      onChange={() => setChecklistItem(card, item.id, { done: !item.done })} />
                     <span className={`flex-1 ${item.done ? 'text-muted line-through' : ''}`}>{item.text}</span>
                     {!ro && (
                       <button aria-label={t('removeItem')} className="text-muted opacity-0 group-hover:opacity-100"
-                        onClick={() => updateCard(card, { checklist: card.checklist.filter((i) => i.id !== item.id) })}><Icon name="x" size={14} /></button>
+                        onClick={() => setChecklistItem(card, item.id, null)}><Icon name="x" size={14} /></button>
                     )}
                   </li>
                 ))}
@@ -99,7 +99,7 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
               {!ro && (
                 <form className="mt-1" onSubmit={(e) => {
                   e.preventDefault()
-                  if (newItem.trim()) updateCard(card, { checklist: [...card.checklist, { id: uid(), text: newItem.trim(), done: false }] })
+                  if (newItem.trim()) setChecklistItem(card, uid(), { text: newItem.trim(), done: false })
                   setNewItem('')
                 }}>
                   <input className="field" placeholder={t('addItem')} value={newItem} onChange={(e) => setNewItem(e.target.value)} />
@@ -222,8 +222,7 @@ function LabelPicker({ card, state, ro }: { card: Card; state: State; ro: boolea
   const [colouring, setColouring] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [colour, setColour] = useState(LABEL_COLORS[0])
-  const toggle = (id: string) =>
-    updateCard(card, { labels: card.labels.includes(id) ? card.labels.filter((x) => x !== id) : [...card.labels, id] })
+  const toggle = (id: string) => setLabel(card, id, !card.labels.includes(id))
 
   return (
     <div className="flex flex-wrap items-center gap-1">
