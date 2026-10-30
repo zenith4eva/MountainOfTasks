@@ -18,10 +18,12 @@ export const hooks = {
   },
 }
 
-// One sync operation at a time.
+// One sync operation at a time, across every open tab of this origin (two tabs pushing at once
+// only cost a ref-conflict retry, but a Web Lock makes the second one wait instead).
 let chain: Promise<unknown> = Promise.resolve()
 const locked = <T>(fn: () => Promise<T>): Promise<T> => {
-  const p = chain.then(fn, fn)
+  const run = () => (globalThis.navigator?.locks ? navigator.locks.request('mountain-sync', fn) : fn())
+  const p = chain.then(run, run)
   chain = p.catch(() => {})
   return p
 }
@@ -94,6 +96,7 @@ export async function pendingMessage(): Promise<string> {
 
 export const push = (message?: string) => locked(async () => {
   const gh = getApi()
+  const uploaded = new Map<string, string>() // blob path -> sha, kept across ref-conflict retries
   for (let attempt = 0; attempt < 4; attempt++) {
     await pullInner()
     const all = await db.events.toArray()
@@ -106,7 +109,8 @@ export const push = (message?: string) => locked(async () => {
     const entries: NewEntry[] = []
 
     for (const b of blobs) {
-      const sha = await gh.createBlob(b64(await b.data.arrayBuffer()))
+      const sha = uploaded.get(b.path) ?? (await gh.createBlob(b64(await b.data.arrayBuffer())))
+      uploaded.set(b.path, sha)
       entries.push({ path: b.path, sha })
     }
 

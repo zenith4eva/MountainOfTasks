@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, uid, type StoredEv } from '../lib/db'
 import { sortByPos } from '../lib/frac'
@@ -29,7 +29,7 @@ export function CardModal({ state, events, cardId, onClose, readOnly }: { state:
     if (editing) setDesc((d) => d + ids.filter((a) => a.mime.startsWith('image/')).map((a) => `\n![](att:${a.id})`).join(''))
   }
 
-  const timeline = describeRows(events.filter((e) => e.payload.cardId === cardId), state).reverse()
+  const timeline = useMemo(() => describeRows(events.filter((e) => e.payload.cardId === cardId), state).reverse(), [events, state, cardId])
 
   return (
     <Modal onClose={onClose} wide label={card.title}>

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import {
-  DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, closestCorners,
+  DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, closestCenter, closestCorners,
   useDroppable, useSensor, useSensors, type CollisionDetection, type DragEndEvent, type DragOverEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -8,7 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { keyAt, sortByPos } from '../lib/frac'
 import type { Attachment, Card, Column, Priority, State } from '../lib/model'
 import { addCard, addColumn, moveCard, updateColumn } from '../lib/actions'
-import { Icon, LabelPill, MenuItem, Popover, fmtDay, fmtMonth, fmtMonthShort, priorityName, today, useAttachmentUrl } from './ui'
+import { Icon, LabelPill, MenuItem, Popover, fmtDay, fmtMonth, fmtMonthShort, localDay, priorityName, today, useAttachmentUrl } from './ui'
 import { t } from '../i18n'
 
 export interface Filter { labels: string[]; due: 'any' | 'overdue' | 'week' | 'none'; priority: 'any' | Priority }
@@ -21,7 +21,7 @@ export function matches(c: Card, f: Filter) {
   if (f.due === 'none' && c.due) return false
   if (f.due === 'overdue' && !(c.due && c.due < t && !c.completedAt)) return false
   if (f.due === 'week') {
-    const wk = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10)
+    const wk = localDay(new Date(Date.now() + 7 * 864e5))
     if (!(c.due && c.due <= wk && !c.completedAt)) return false
   }
   return true
@@ -65,7 +65,7 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
   }
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )

@@ -72,7 +72,9 @@ export { priorityName } from '../lib/describe'
 export { fmtMonth, fmtMonthShort, fmtDate, fmtDay, fmtTime, ago } from '../i18n'
 export const fmtSize = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1048576).toFixed(1)} MB`)
 
-export const today = () => new Date().toISOString().slice(0, 10)
+/** Local calendar date as YYYY-MM-DD; due dates are local, so UTC would mark cards overdue early in the evening. */
+export const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+export const today = () => localDay()
 
 export function Modal({ onClose, children, wide, label }: { onClose: () => void; children: ReactNode; wide?: boolean; label: string }) {
   useEffect(() => {
