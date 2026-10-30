@@ -4,6 +4,29 @@ A personal, local-first kanban board (Trello-style) that runs as a static PWA on
 
 **Live app:** https://zenith4eva.github.io/MountainOfTasks/
 
+<p align="center">
+  <img src="docs/desktop.gif" alt="Dragging cards between columns and adding a card on desktop" width="620">
+  <img src="docs/phone.gif" alt="Adding a card and ticking a checklist item on a phone" width="200">
+</p>
+
+## Screenshots
+
+**Web**
+
+| Light | Dark |
+| --- | --- |
+| ![Board in light theme](docs/desktop-light.png) | ![Board in dark theme](docs/desktop-dark.png) |
+
+![Card detail with markdown description, checklist and comments](docs/desktop-card.png)
+
+**Phone**
+
+<p>
+  <img src="docs/phone-light.png" alt="Board on phone, light theme" width="240">
+  <img src="docs/phone-dark.png" alt="Board on phone, dark theme" width="240">
+  <img src="docs/phone-card.png" alt="Card detail on phone" width="240">
+</p>
+
 ## Features
 
 - **Boards, columns, cards** with drag and drop, WIP limits, labels, due dates, priority, checklists, comments, markdown descriptions and cover images.
