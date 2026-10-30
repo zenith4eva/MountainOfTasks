@@ -35,6 +35,7 @@ A personal, local-first kanban board (Trello-style) that runs as a static PWA on
 
 - **Boards, columns, cards** with drag and drop, WIP limits, labels, due dates, priority, checklists, comments, markdown descriptions and cover images.
 - **Done columns** group completed cards by month, with a month/year picker.
+- **Board backgrounds:** CSS presets (static and animated), an uploaded image or video stored in the data repo, or any image/video URL.
 - **Attachments** (paste or drag-drop), stored in the data repo. Large screenshots are re-encoded to WebP (max 2048 px) before upload. Warns above 50 MB; refuses above 100 MB (GitHub's file limit).
 - **Offline first.** Data lives in IndexedDB; the app works with no network and syncs when it comes back.
 - **Sync** in auto mode (3 s debounce, generated commit messages like `[iPhone] move "Fix auth" → Doing`) or manual mode (pending badge, editable message).

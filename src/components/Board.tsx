@@ -6,9 +6,10 @@ import {
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { keyAt, sortByPos } from '../lib/frac'
-import type { Attachment, Card, Column, Priority, State } from '../lib/model'
-import { addCard, addColumn, moveCard, updateColumn } from '../lib/actions'
-import { Icon, LabelPill, MenuItem, Popover, fmtDay, fmtMonth, fmtMonthShort, localDay, priorityName, today, useAttachmentUrl } from './ui'
+import type { Attachment, Board, Card, Column, Priority, State } from '../lib/model'
+import { addCard, addColumn, moveCard, setBackground, updateColumn, uploadBackground } from '../lib/actions'
+import { PRESETS, isVideo, presetById, type Background } from '../lib/backgrounds'
+import { Icon, LabelPill, MenuItem, Modal, Popover, fmtDay, fmtMonth, fmtMonthShort, localDay, priorityName, today, useAttachmentUrl } from './ui'
 import { t } from '../i18n'
 
 export interface Filter { labels: string[]; due: 'any' | 'overdue' | 'week' | 'none'; priority: 'any' | Priority }
@@ -129,11 +130,13 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
 
   if (!board) return null
   const dragCard = drag ? state.cards[drag.cardId] : null
+  const bg = (board.settings.background ?? null) as Background | null
 
   return (
     <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onStart} onDragOver={onOver} onDragEnd={onEnd}
       onDragCancel={() => { setDrag(null); setActiveCol(null) }}>
-      <div className="relative h-full">
+      <div className="relative isolate h-full">
+      {bg && <BoardBackground bg={bg} />}
       {/* Phone: one column per screen, snapping, with dots below. Snap is off while dragging so auto-scroll is not fought. */}
       <div ref={scroller} onScroll={(e) => {
         const el = e.currentTarget, first = el.querySelector('section')
@@ -147,7 +150,7 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
           ))}
         </SortableContext>
         {!readOnly && (
-          <div className="w-[284px] shrink-0 snap-start max-sm:w-[calc(100vw-52px)]">
+          <div className={`w-[284px] shrink-0 snap-start max-sm:w-[calc(100vw-52px)] ${bg ? 'rounded-[8px] bg-ground/70 backdrop-blur-sm' : ''}`}>
             {newCol === null ? (
               <button className="btn btn-ghost w-full justify-start text-muted" onClick={() => setNewCol('')}>
                 <Icon name="plus" /> {t('addColumn')}
@@ -179,6 +182,65 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
         {dragCard && <CardTile card={dragCard} state={state} overlay />}
       </DragOverlay>
     </DndContext>
+  )
+}
+
+export function BoardBackground({ bg }: { bg: Background }) {
+  if (bg.kind === 'preset') {
+    const p = presetById(bg.id)
+    return p ? <div aria-hidden className={`absolute inset-0 -z-10 ${p.animated ? 'bg-anim' : ''}`} style={{ background: p.css }} /> : null
+  }
+  return <MediaBackground bg={bg} />
+}
+
+function MediaBackground({ bg }: { bg: Exclude<Background, { kind: 'preset' }> }) {
+  const { url: fileUrl } = useAttachmentUrl(bg.kind === 'file' ? bg : undefined)
+  const url = bg.kind === 'url' ? bg.url : fileUrl
+  if (!url) return null
+  return isVideo(bg.kind === 'url' ? bg.url : bg.mime)
+    ? <video aria-hidden className="absolute inset-0 -z-10 h-full w-full object-cover" src={url} autoPlay muted loop playsInline />
+    : <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url("${url}")` }} />
+}
+
+export function BackgroundPicker({ board, onClose }: { board: Board; onClose: () => void }) {
+  const cur = (board.settings.background ?? null) as Background | null
+  const [url, setUrl] = useState('')
+  const isPreset = (id: string) => cur?.kind === 'preset' && cur.id === id
+  const ring = 'ring-2 ring-ink ring-offset-2 ring-offset-surface'
+  const okUrl = /^https?:\/\/\S+$/.test(url.trim())
+  return (
+    <Modal onClose={onClose} label={t('background')}>
+      <div className="p-5 sm:p-6">
+        <div className="mb-4 flex items-start justify-between">
+          <h2 className="text-[20px] font-semibold">{t('background')}</h2>
+          <button onClick={onClose} aria-label={t('close')} className="rounded p-1.5 text-muted hover:bg-raised"><Icon name="x" size={18} /></button>
+        </div>
+        <h3 className="mb-2 text-xs font-medium text-muted">{t('bgPresets')}</h3>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          <button onClick={() => setBackground(board, null)} aria-pressed={!cur}
+            className={`flex h-16 items-center justify-center rounded-[8px] bg-raised text-xs text-muted ${!cur ? ring : ''}`}>{t('bgNone')}</button>
+          {PRESETS.map((p) => (
+            <button key={p.id} onClick={() => setBackground(board, { kind: 'preset', id: p.id })} aria-label={p.name} aria-pressed={isPreset(p.id)}
+              className={`relative h-16 overflow-hidden rounded-[8px] ${isPreset(p.id) ? ring : ''}`}>
+              <span className={`absolute inset-0 ${p.animated ? 'bg-anim' : ''}`} style={{ background: p.css }} />
+              <span className="absolute bottom-1 left-2 text-[11px] font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,.6)]">{p.name}</span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <label className="btn btn-quiet cursor-pointer">
+            <Icon name="image" size={14} /> {t('bgUpload')}
+            <input type="file" accept="image/*,video/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadBackground(board, f); e.target.value = '' }} />
+          </label>
+        </div>
+        <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (okUrl) { setBackground(board, { kind: 'url', url: url.trim() }); setUrl('') } }}>
+          <input className="field" placeholder={t('bgUrl')} value={url} onChange={(e) => setUrl(e.target.value)} aria-label={t('bgUrl')} />
+          <button className="btn btn-primary shrink-0" disabled={!okUrl}>{t('bgUse')}</button>
+        </form>
+        {cur && cur.kind !== 'preset' && <div className="relative isolate mt-4 h-28 overflow-hidden rounded-[8px] bg-raised"><BoardBackground bg={cur} /></div>}
+      </div>
+    </Modal>
   )
 }
 

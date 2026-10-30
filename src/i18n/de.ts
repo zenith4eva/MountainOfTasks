@@ -308,4 +308,13 @@ export default {
   defCard: 'Karte',
   defColumn: 'Spalte',
   defLabel: 'Label',
+
+  // board background
+  background: 'Hintergrund',
+  bgPresets: 'Vorlagen',
+  bgNone: 'Keiner',
+  bgUpload: 'Bild oder Video hochladen',
+  bgUrl: 'Bild- oder Video-URL',
+  bgUse: 'Verwenden',
+  dBgChanged: 'Hintergrund des Boards „{name}“ geändert',
 } satisfies Dict

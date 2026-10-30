@@ -308,4 +308,13 @@ export default {
   defCard: 'cartão',
   defColumn: 'coluna',
   defLabel: 'etiqueta',
+
+  // board background
+  background: 'Fundo',
+  bgPresets: 'Predefinições',
+  bgNone: 'Nenhum',
+  bgUpload: 'Enviar imagem ou vídeo',
+  bgUrl: 'URL de imagem ou vídeo',
+  bgUse: 'Usar',
+  dBgChanged: 'Alterou o fundo do quadro “{name}”',
 } satisfies Dict

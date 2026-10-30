@@ -309,4 +309,13 @@ export default {
   defCard: 'carte',
   defColumn: 'colonne',
   defLabel: 'étiquette',
+
+  // board background
+  background: 'Arrière-plan',
+  bgPresets: 'Préréglages',
+  bgNone: 'Aucun',
+  bgUpload: 'Importer une image ou une vidéo',
+  bgUrl: 'URL d’image ou de vidéo',
+  bgUse: 'Utiliser',
+  dBgChanged: 'A changé l’arrière-plan du tableau « {name} »',
 } satisfies Dict

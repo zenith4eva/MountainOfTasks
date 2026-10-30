@@ -10,8 +10,11 @@ export function describeEvent(e: Ev, s: State): string {
   const col = (id: string) => s.boards[p.boardId]?.columns[id]?.name ?? t('defColumn')
   switch (e.type) {
     case 'board.create': return t('dBoardCreated', { name: p.name })
-    case 'board.update':
-      return p.fields.deleted ? t('dBoardDeleted') : p.fields.deleted === false ? t('dBoardRestored') : t('dBoardRenamed', { name: p.fields.name })
+    case 'board.update': {
+      const f = p.fields
+      if ('settings' in f) return t('dBgChanged', { name: s.boards[p.boardId]?.name ?? '' })
+      return f.deleted ? t('dBoardDeleted') : f.deleted === false ? t('dBoardRestored') : t('dBoardRenamed', { name: f.name })
+    }
     case 'column.create': return t('dColAdded', { name: p.name })
     case 'column.update': {
       const f = p.fields

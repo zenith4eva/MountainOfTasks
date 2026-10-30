@@ -7,7 +7,7 @@ import { pendingMessage, pull, push, setToken } from './lib/sync'
 import { createBoard } from './lib/actions'
 import type { BioSealed, Sealed } from './lib/crypto'
 import type { State } from './lib/model'
-import { BoardView, noFilter, type Filter } from './components/Board'
+import { BackgroundPicker, BoardView, noFilter, type Filter } from './components/Board'
 // Eager: a lazy chunk drops the keys typed right after Ctrl+K while it loads.
 import { Palette, type Command } from './components/Palette'
 import { Setup, Unlock } from './components/Lock'
@@ -117,6 +117,7 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
   const [palette, setPalette] = useState(false)
   const [filter, setFilter] = useState<Filter>(noFilter)
   const [preview, setPreview] = useState<{ title: string; state: State; boardId?: string } | null>(null)
+  const [bgPick, setBgPick] = useState(false)
 
   const boards = Object.values(state.boards).filter((b) => !b.deleted).sort((a, b) => a.createdAt - b.createdAt)
   const board = (boardId && state.boards[boardId] && !state.boards[boardId].deleted) ? state.boards[boardId] : boards[0]
@@ -183,6 +184,7 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
                 <>
                   {boards.map((b) => <MenuItem key={b.id} onClick={() => { close(); openBoard(b.id) }}>{b.name}</MenuItem>)}
                   <MenuItem onClick={() => { close(); newBoard() }}><Icon name="plus" size={14} /> {t('newBoard')}</MenuItem>
+                  {board && <MenuItem onClick={() => { close(); setBgPick(true) }}><Icon name="image" size={14} /> {t('background')}</MenuItem>}
                 </>
               )}
             </Popover>
@@ -218,6 +220,7 @@ function Shell({ token, onLock, onReplaceToken, onAuthFail }: { token: string | 
       {cardId && state.cards[cardId] && <CardModal state={state} events={events} cardId={cardId} onClose={() => setCardId(null)} />}
       {palette && <Palette state={state} commands={commands} onBoard={openBoard} onCard={setCardId} onClose={() => setPalette(false)} />}
       {preview && <Preview {...preview} onClose={() => setPreview(null)} />}
+      {bgPick && board && <BackgroundPicker board={board} onClose={() => setBgPick(false)} />}
       </Suspense>
     </div>
   )

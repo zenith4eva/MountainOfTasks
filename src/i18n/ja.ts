@@ -308,4 +308,13 @@ export default {
   defCard: 'カード',
   defColumn: '列',
   defLabel: 'ラベル',
+
+  // board background
+  background: '背景',
+  bgPresets: 'プリセット',
+  bgNone: 'なし',
+  bgUpload: '画像または動画をアップロード',
+  bgUrl: '画像または動画の URL',
+  bgUse: '適用',
+  dBgChanged: 'ボード「{name}」の背景を変更',
 } satisfies Dict

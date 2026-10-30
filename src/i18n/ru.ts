@@ -327,4 +327,13 @@ export default {
   defCard: 'карточка',
   defColumn: 'колонка',
   defLabel: 'метка',
+
+  // board background
+  background: 'Фон',
+  bgPresets: 'Пресеты',
+  bgNone: 'Нет',
+  bgUpload: 'Загрузить изображение или видео',
+  bgUrl: 'URL изображения или видео',
+  bgUse: 'Применить',
+  dBgChanged: 'Изменён фон доски «{name}»',
 } satisfies Dict

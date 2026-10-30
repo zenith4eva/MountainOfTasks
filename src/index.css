@@ -120,6 +120,10 @@ textarea.field { height: auto; padding: 8px 10px; resize: vertical; }
 .scroll-x { overflow-x: auto; scrollbar-width: thin; }
 .no-scrollbar { scrollbar-width: none; }
 
+/* Animated board backgrounds: an oversized gradient slowly panned; reduced-motion below freezes it. */
+.bg-anim { background-size: 300% 300% !important; animation: bg-drift 28s ease-in-out infinite alternate; }
+@keyframes bg-drift { from { background-position: 0% 40%; } to { background-position: 100% 60%; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
 }

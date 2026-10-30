@@ -2,7 +2,8 @@ import { db, emit, emitMany, uid } from './db'
 import { between, sortByPos } from './frac'
 import { gitBlobSha, sha256Hex } from './crypto'
 import { t } from '../i18n'
-import { type Card, type ChecklistItem, type Column, type EvType, type State } from './model'
+import { type Board, type Card, type ChecklistItem, type Column, type EvType, type State } from './model'
+import type { Background } from './backgrounds'
 
 export async function createBoard(name: string) {
   const boardId = uid()
@@ -17,6 +18,21 @@ export async function createBoard(name: string) {
 }
 
 export const renameBoard = (boardId: string, name: string) => emit('board.update', { boardId, fields: { name } })
+
+export const setBackground = (board: Board, background: Background | null) =>
+  emit('board.update', { boardId: board.id, fields: { settings: { ...board.settings, background } } })
+
+// ponytail: replaced background files stay in the repo; list them in Storage if it ever matters.
+export async function uploadBackground(board: Board, raw: File) {
+  const f = raw.type.startsWith('image/') ? await shrinkImage(raw, 2560) : raw
+  if (f.size > MAX_BYTES) return alert(t('tooLarge', { name: f.name }))
+  if (f.size > WARN_BYTES && !confirm(t('largeConfirm', { name: f.name, mb: (f.size / 1048576).toFixed(0) }))) return
+  const safe = f.name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file'
+  const path = `backgrounds/${board.id}/${uid()}-${safe}`
+  const blob = await gitBlobSha(new Uint8Array(await f.arrayBuffer()))
+  await db.blobs.put({ path, cardId: board.id, data: f })
+  await setBackground(board, { kind: 'file', path, blob, mime: f.type || 'application/octet-stream' })
+}
 export const deleteBoard = (boardId: string, deleted = true) => emit('board.update', { boardId, fields: { deleted } })
 
 export function addColumn(state: State, boardId: string, name: string) {
@@ -67,11 +83,11 @@ export const MAX_BYTES = 100 * 1024 * 1024
 // images to WebP (JPEG where WebP encoding is missing) at most 2048 px; keep the original if that is not smaller.
 // ponytail: alpha is lost on the JPEG fallback; fine for screenshots, revisit if people attach logos.
 const SHRINK_ABOVE = 300 * 1024
-export async function shrinkImage(f: File): Promise<File> {
+export async function shrinkImage(f: File, max = 2048): Promise<File> {
   if (!/^image\/(png|jpe?g|webp|bmp|tiff?)$/.test(f.type) || f.size < SHRINK_ABOVE || typeof createImageBitmap !== 'function') return f
   try {
     const bmp = await createImageBitmap(f)
-    const k = Math.min(1, 2048 / Math.max(bmp.width, bmp.height))
+    const k = Math.min(1, max / Math.max(bmp.width, bmp.height))
     const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k)
     const canvas = new OffscreenCanvas(w, h)
     canvas.getContext('2d')!.drawImage(bmp, 0, 0, w, h)

@@ -132,7 +132,9 @@ const urlCache = new Map<string, Promise<string>>()
 
 /** Object URL for a synced attachment, fetched once per session and shared by every view. */
 /** Git blob shas are content addresses, so a cached copy never goes stale; this also makes attachments work offline. */
-async function cachedBlob(att: Attachment): Promise<Blob> {
+export type BlobRef = Pick<Attachment, 'path' | 'blob' | 'mime'>
+
+async function cachedBlob(att: BlobRef): Promise<Blob> {
   const fetchIt = async () => new Blob([await getApi().blobBytes(att.blob)], { type: att.mime })
   if (!('caches' in globalThis)) return fetchIt()
   const cache = await caches.open('attachments')
@@ -144,7 +146,7 @@ async function cachedBlob(att: Attachment): Promise<Blob> {
   return blob
 }
 
-export function attachmentUrl(att: Attachment): Promise<string> {
+export function attachmentUrl(att: BlobRef): Promise<string> {
   if (!urlCache.has(att.path)) {
     urlCache.set(att.path, cachedBlob(att)
       .then((b) => URL.createObjectURL(b))
@@ -153,7 +155,7 @@ export function attachmentUrl(att: Attachment): Promise<string> {
   return urlCache.get(att.path)!
 }
 
-export function useAttachmentUrl(att: Attachment | undefined): { url: string | null; pending: boolean } {
+export function useAttachmentUrl(att: BlobRef | undefined): { url: string | null; pending: boolean } {
   const pendingBlob = useLiveQuery(() => (att ? db.blobs.get(att.path) : undefined), [att?.path])
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {

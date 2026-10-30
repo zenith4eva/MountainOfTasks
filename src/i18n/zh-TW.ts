@@ -308,4 +308,13 @@ export default {
   defCard: '卡片',
   defColumn: '欄',
   defLabel: '標籤',
+
+  // board background
+  background: '背景',
+  bgPresets: '預設',
+  bgNone: '無',
+  bgUpload: '上傳圖片或影片',
+  bgUrl: '圖片或影片 URL',
+  bgUse: '使用',
+  dBgChanged: '變更了看板「{name}」的背景',
 } satisfies Dict

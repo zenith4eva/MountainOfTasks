@@ -308,4 +308,13 @@ export default {
   defCard: 'tarjeta',
   defColumn: 'columna',
   defLabel: 'etiqueta',
+
+  // board background
+  background: 'Fondo',
+  bgPresets: 'Preajustes',
+  bgNone: 'Ninguno',
+  bgUpload: 'Subir imagen o vídeo',
+  bgUrl: 'URL de imagen o vídeo',
+  bgUse: 'Usar',
+  dBgChanged: 'Cambió el fondo del tablero «{name}»',
 } satisfies Dict

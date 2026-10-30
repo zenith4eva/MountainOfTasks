@@ -321,4 +321,13 @@ export default {
   defCard: 'card',
   defColumn: 'column',
   defLabel: 'label',
+
+  // board background
+  background: 'Background',
+  bgPresets: 'Presets',
+  bgNone: 'None',
+  bgUpload: 'Upload image or video',
+  bgUrl: 'Image or video URL',
+  bgUse: 'Use',
+  dBgChanged: 'Changed the background of board "{name}"',
 } as const

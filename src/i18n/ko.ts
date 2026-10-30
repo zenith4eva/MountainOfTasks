@@ -308,4 +308,13 @@ export default {
   defCard: '카드',
   defColumn: '열',
   defLabel: '라벨',
+
+  // board background
+  background: '배경',
+  bgPresets: '프리셋',
+  bgNone: '없음',
+  bgUpload: '이미지 또는 동영상 업로드',
+  bgUrl: '이미지 또는 동영상 URL',
+  bgUse: '적용',
+  dBgChanged: '‘{name}’ 보드의 배경을 바꿨습니다',
 } satisfies Dict

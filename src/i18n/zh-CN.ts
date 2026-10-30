@@ -308,4 +308,13 @@ export default {
   defCard: '卡片',
   defColumn: '列',
   defLabel: '标签',
+
+  // board background
+  background: '背景',
+  bgPresets: '预设',
+  bgNone: '无',
+  bgUpload: '上传图片或视频',
+  bgUrl: '图片或视频 URL',
+  bgUse: '使用',
+  dBgChanged: '更改了看板“{name}”的背景',
 } satisfies Dict
