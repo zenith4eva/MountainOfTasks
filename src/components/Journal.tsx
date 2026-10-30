@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { StoredEv } from '../lib/db'
-import { DATA_REPO } from '../lib/github'
+import { dataRepo } from '../lib/github'
 import { replay, type State } from '../lib/model'
 import { describeRows } from '../lib/describe'
 import { Icon, fmtTime } from './ui'
@@ -72,7 +72,7 @@ export function Journal({ state, events, onPreview, onOpen }: {
             <span className="flex gap-2 text-xs sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
               <button className="text-data hover:underline" onClick={() => onPreview(t('asOf', { time: fmtTime(e.ts) }), replay(events, e.ts), e.payload.boardId)}>{t('viewAtPoint')}</button>
               <a className="inline-flex items-center gap-0.5 text-muted hover:text-ink" target="_blank" rel="noreferrer"
-                href={`https://github.com/${DATA_REPO}/commits/main?until=${new Date(e.ts + 86400000).toISOString().slice(0, 10)}`}>
+                href={`https://github.com/${dataRepo()}/commits/main?until=${new Date(e.ts + 86400000).toISOString().slice(0, 10)}`}>
                 {t('repo')} <Icon name="right" size={10} />
               </a>
             </span>

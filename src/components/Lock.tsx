@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { db, defaultDevice, getKv, setKv } from '../lib/db'
-import { DATA_REPO } from '../lib/github'
-import { MAX_FAILS, openWithBiometric, openWithPin, sealWithPin, type BioSealed, type Sealed } from '../lib/crypto'
+import { db, getKv, setKv } from '../lib/db'
+import { MAX_FAILS, openWithBiometric, openWithPin, type BioSealed, type Sealed } from '../lib/crypto'
 import { Mark } from './ui'
-import { t, tn, tx } from '../i18n'
+import { t, tn } from '../i18n'
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -13,93 +12,6 @@ function Frame({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     </main>
-  )
-}
-
-export async function checkToken(token: string): Promise<string | null> {
-  const r = await fetch(`https://api.github.com/repos/${DATA_REPO}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
-  if (!r) return t('errReach')
-  if (r.status === 401) return t('errRejected')
-  if (r.status === 404) return t('errNoRepo', { repo: DATA_REPO })
-  if (!r.ok) return t('errStatus', { status: r.status })
-  const j = await r.json()
-  if (j.permissions && !j.permissions.push) return t('errReadOnly')
-  return null
-}
-
-export function Setup({ onDone, notice, allowOffline = true }: { onDone: (token: string) => void; notice?: string; allowOffline?: boolean }) {
-  const [token, setToken] = useState('')
-  const [pin, setPin] = useState('')
-  const [pin2, setPin2] = useState('')
-  const [len, setLen] = useState(4)
-  const [name, setName] = useState(defaultDevice)
-  useEffect(() => { getKv('device', defaultDevice()).then(setName) }, [])
-  const [step, setStep] = useState<'token' | 'pin'>('token')
-  const [err, setErr] = useState(notice ?? '')
-  const [busy, setBusy] = useState(false)
-
-  return (
-    <Frame>
-      {step === 'token' ? (
-        <form onSubmit={async (e) => {
-          e.preventDefault()
-          setBusy(true)
-          const problem = await checkToken(token.trim())
-          setBusy(false)
-          if (problem) return setErr(problem)
-          setErr('')
-          setStep('pin')
-        }}>
-          <h1 className="mb-1 text-[24px] font-semibold">{t('connectRepo')}</h1>
-          <p className="mb-5 text-muted">
-            {tx('connectHelp', { repo: <b key="r" className="font-medium text-ink">{DATA_REPO}</b> })}
-          </p>
-          <label className="mb-1 block text-xs font-medium text-muted" htmlFor="pat">{t('pat')}</label>
-          <input id="pat" className="field" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" />
-          {err && <p className="mt-2 text-negative" role="alert">{err}</p>}
-          <button className="btn btn-primary mt-4 w-full justify-center" disabled={!token.trim() || busy}>{busy ? t('checking') : t('continue')}</button>
-          <a className="mt-3 block text-center text-xs text-muted underline" target="_blank" rel="noreferrer"
-            href="https://github.com/settings/personal-access-tokens/new">{t('createTokenLink')}</a>
-          {allowOffline && (
-            <button type="button" className="btn btn-ghost mt-6 w-full justify-center text-muted" onClick={() => setKv('offline', true)}>
-              {t('useOffline')}
-            </button>
-          )}
-        </form>
-      ) : (
-        <form onSubmit={async (e) => {
-          e.preventDefault()
-          if (pin.length !== len) return setErr(t('pinMustBe', { n: len }))
-          if (pin !== pin2) return setErr(t('pinsDiffer'))
-          setBusy(true)
-          const sealed = await sealWithPin(pin, token.trim())
-          await setKv('sealed', { ...sealed, len })
-          await setKv('pinFails', 0)
-          await setKv('offline', false)
-          await setKv('device', name.trim() || defaultDevice())
-          await db.kv.delete('bio')
-          onDone(token.trim())
-        }}>
-          <h1 className="mb-1 text-[24px] font-semibold">{t('choosePin')}</h1>
-          <p className="mb-5 text-muted">{t('pinHelp')}</p>
-          <div className="mb-3 flex gap-1" role="radiogroup" aria-label={t('pin')}>
-            {[4, 6].map((n) => (
-              <button key={n} type="button" role="radio" aria-checked={len === n} className={`btn h-8 ${len === n ? 'btn-primary' : 'btn-quiet'}`}
-                onClick={() => { setLen(n); setPin(''); setPin2('') }}>{t('pinLen', { n })}</button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <input className="field text-center text-lg tracking-[0.4em]" inputMode="numeric" maxLength={len} type="password" aria-label={t('pin')} autoFocus value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
-            <input className="field text-center text-lg tracking-[0.4em]" inputMode="numeric" maxLength={len} type="password" aria-label={t('repeatPin')} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ''))} />
-          </div>
-          {/* Tags this device's commits and comments; the UA guess ("Windows") is rarely what people want. */}
-          <label className="mb-1 mt-4 block text-xs font-medium text-muted" htmlFor="device">{t('deviceName')}</label>
-          <input id="device" className="field" value={name} onChange={(e) => setName(e.target.value)} />
-          {err && <p className="mt-2 text-negative" role="alert">{err}</p>}
-          <button className="btn btn-primary mt-4 w-full justify-center" disabled={busy}>{busy ? t('encrypting') : t('saveOpen')}</button>
-        </form>
-      )}
-    </Frame>
   )
 }
 

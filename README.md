@@ -61,11 +61,25 @@ See [SPEC.md](SPEC.md) for the full design.
 
 ## Using it
 
-1. Create a **private** repo for your data (default: `zenith4eva/mountain-of-tasks-data`; change `DATA_REPO` in [src/lib/github.ts](src/lib/github.ts) for your own).
-2. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) limited to that repo with **Contents: Read and write**.
-3. Open the app, paste the token, and set a PIN. The token never leaves your browser except in calls to `api.github.com`.
+Open **[zenith4eva.github.io/MountainOfTasks](https://zenith4eva.github.io/MountainOfTasks/)**.
 
-Five wrong PINs wipe the token from that device. Your repo is untouched.
+**Try it with nothing to set up:** press **Start now**. Your tasks stay on that device, and you can connect GitHub later from Settings; everything you made so far gets synced then.
+
+**Sync across devices (about 2 minutes):** press **Sync with GitHub** and follow the three steps. The app opens GitHub with both forms already filled in, and shows a sketch of each page so you know what to press.
+
+<img src="docs/onboarding-desktop-1-welcome.png" width="420" alt="Welcome screen with Start now and Sync with GitHub">
+
+1. **Create a private repo.** The link opens GitHub with the name (`mountain-of-tasks-data`) and *Private* already set: press **Create repository**.
+2. **Create an access token.** The link pre-fills the name, a one-year expiry and **Contents: Read and write**. The one thing GitHub won't let a link fill in is which repo the token may see, so: under **Repository access** choose **Only select repositories** and pick your repo. Then **Generate token** and copy it.
+3. **Paste the token.** The app finds your repo by itself. If the token can't see it, the app says exactly which setting to change.
+
+<img src="docs/onboarding-desktop-3-token.png" width="420" alt="Token step: numbered sketch of GitHub's token form"> <img src="docs/onboarding-phone-4-fix-access.png" width="200" alt="Error that shows how to give the token access to the repo">
+
+Then choose a 4- or 6-digit PIN. The token is encrypted with it and stays in that browser; it is only ever sent to `api.github.com`. Five wrong PINs wipe the token from that device. Your repo is untouched.
+
+**Install it** for a full-screen app that opens offline: the welcome screen and Settings → App show an **Install** button in Chrome, Edge and on Android. On iPhone and iPad, tap **Share**, then **Add to Home Screen**.
+
+On another device, open the app, choose **Sync with GitHub**, and paste a token (the same one works, or make one per device).
 
 ## Development
 

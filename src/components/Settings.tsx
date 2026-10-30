@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { db, defaultDevice, setKv, useKv, usePendingCount } from '../lib/db'
-import { DATA_REPO } from '../lib/github'
+import { dataRepo } from '../lib/github'
 import { bioSupported, enrollBiometric } from '../lib/crypto'
 import { getApi, orphans, previewAt, purge, restore } from '../lib/sync'
 import { deleteBoard, renameBoard, updateColumn, updateLabel } from '../lib/actions'
@@ -10,6 +10,8 @@ import { LABEL_COLORS, LabelPill, ago, fmtSize, fmtTime } from './ui'
 import { BackgroundPicker } from './Board'
 import { LANGS, systemLang, t, tn, type Lang } from '../i18n'
 import { setLanguage } from './LangGate'
+import { InstallHint } from './Onboarding'
+import { useInstall } from '../lib/install'
 
 function Section({ title, help, children }: { title: string; help: string; children: ReactNode }) {
   return (
@@ -60,10 +62,19 @@ export function Settings({ state, token, onPreview, onLock, onReplaceToken }: {
         </label>
       </Section>
 
-      <Section title={t('sync')} help={t('syncHelp', { repo: DATA_REPO })}>
+      <Section title={t('sync')} help={t('syncHelp', { repo: dataRepo() })}>
         <Row title={t('commitAuto')} help={mode === 'auto' ? t('on') : t('offManual')}>
           <Toggle on={mode === 'auto'} label={t('commitAuto')} onChange={(v) => setKv('syncMode', v ? 'auto' : 'manual')} />
         </Row>
+        {token && (
+          <Row title={t('dataRepoTitle')}>
+            <a className="inline-flex items-center gap-1 text-data underline" href={`https://github.com/${dataRepo()}`} target="_blank" rel="noreferrer">{dataRepo()}</a>
+          </Row>
+        )}
+      </Section>
+
+      <Section title={t('appSection')} help={t('appSectionHelp')}>
+        <AppInstall />
       </Section>
 
       <Section title={t('appearance')} help={t('appearanceHelp')}>
@@ -146,6 +157,13 @@ export function Settings({ state, token, onPreview, onLock, onReplaceToken }: {
   )
 }
 
+function AppInstall() {
+  const install = useInstall()
+  if (install.installed) return <p className="text-muted">{t('obInstalled')}</p>
+  if (!install.canPrompt && !install.ios) return <p className="text-muted">{t('obInstallOther')}</p>
+  return <InstallHint />
+}
+
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
@@ -163,7 +181,7 @@ function History({ onPreview }: { onPreview: (title: string, s: State) => void }
   const [busy, setBusy] = useState('')
   const [forceSha, setForceSha] = useState('')
   const [confirmName, setConfirmName] = useState('')
-  const repoName = DATA_REPO.split('/')[1]
+  const repoName = dataRepo().split('/')[1]
 
   const doRestore = async (sha: string, force: boolean) => {
     if (pending && !confirm(tn('discardConfirm', pending))) return

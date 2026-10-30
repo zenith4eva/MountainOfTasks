@@ -15,7 +15,7 @@ mkdirSync(OUT, { recursive: true })
 
 async function seed(page, deviceName) {
   await page.goto(BASE)
-  await page.getByRole('button', { name: 'Use on this device only, without sync' }).click()
+  await page.getByRole('button', { name: /^Start now/ }).click()
   await page.evaluate(async (deviceName) => {
     const a = await import('/MountainOfTasks/src/lib/actions.ts')
     const { replay } = await import('/MountainOfTasks/src/lib/model.ts')

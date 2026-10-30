@@ -1,5 +1,5 @@
 import { db, getKv, setKv, device, dropCache, type StoredEv } from './db'
-import { client, ConflictError, DATA_REPO, type Client, type NewEntry } from './github'
+import { client, ConflictError, dataRepo, setDataRepo, type Client, type NewEntry } from './github'
 import { commitMessage, eventPath, merge, replay, snapshot, type Ev, type State } from './model'
 import { b64, gitBlobSha } from './crypto'
 import { t, tn } from '../i18n'
@@ -50,7 +50,7 @@ async function pullInner(): Promise<boolean> {
     // No branch: either an empty repo (init it) or a 404 because the repo is gone or the token lost access.
     const epoch = await getKv('epoch', 0)
     await gh.init(await metaJson(replay([]), epoch, null))
-    if (!(await gh.headSha())) throw new Error(t('errNoRepo', { repo: DATA_REPO }))
+    if (!(await gh.headSha())) throw new Error(t('errNoRepo', { repo: dataRepo() }))
     return pullInner()
   }
   if (head === (await getKv<string | null>('headSha', null))) return false
@@ -87,6 +87,23 @@ async function pullInner(): Promise<boolean> {
 }
 
 export const pull = () => locked(pullInner)
+
+/**
+ * Points sync at a (new) data repo. Moving to a different repo resets what this device knows about
+ * the remote and marks every local event unsynced, so the next push copies your tasks over.
+ */
+export const switchRepo = (r: string) => locked(async () => {
+  const same = r === dataRepo() // legacy devices already sync to LEGACY_REPO in memory
+  await setKv('repo', r)
+  setDataRepo(r)
+  if (same) return
+  // ponytail: attachments already uploaded to the old repo are not copied; their files stay there.
+  await db.transaction('rw', db.events, db.files, db.kv, async () => {
+    await db.events.toCollection().modify({ synced: 0 })
+    await db.files.clear()
+    await db.kv.bulkDelete(['headSha', 'treeSha', 'epoch'])
+  })
+})
 
 export async function pendingMessage(): Promise<string> {
   const all = await db.events.toArray()

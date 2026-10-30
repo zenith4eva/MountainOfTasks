@@ -1,4 +1,47 @@
-export const DATA_REPO = 'zenith4eva/mountain-of-tasks-data'
+/** Devices set up before the data repo became configurable synced here. */
+export const LEGACY_REPO = 'zenith4eva/mountain-of-tasks-data'
+export const DEFAULT_REPO_NAME = 'mountain-of-tasks-data'
+
+// The signed-in person's data repo ("owner/name"); set from kv before sync starts.
+let repo = LEGACY_REPO
+export const dataRepo = () => repo
+export const setDataRepo = (r: string) => { repo = r }
+
+/** github.com links that pre-fill the two forms a new person has to submit. */
+export const newRepoUrl = (name = DEFAULT_REPO_NAME) =>
+  `https://github.com/new?name=${encodeURIComponent(name)}&visibility=private&description=${encodeURIComponent('Mountain of Tasks data')}`
+// Repository selection cannot be pre-filled (GitHub docs); everything else can.
+export const newTokenUrl = () =>
+  'https://github.com/settings/personal-access-tokens/new?name=Mountain%20of%20Tasks&description=' +
+  encodeURIComponent('Sync for Mountain of Tasks') + '&expires_in=366&contents=write'
+
+export type TokenCheck =
+  | { repo: string }
+  | { error: 'reach' | 'rejected' | 'noRepos' }
+  | { error: 'status'; status: number }
+  | { error: 'notFound'; repos: string[] }
+  | { error: 'confirm'; repo: string } // the token sees exactly one repo, under another name
+
+/**
+ * Works out the data repo from what the token can see, so people need not type owner/name.
+ * Prefers a repo called `preferred`; a token limited to one other repo needs a confirmation.
+ */
+export async function findRepo(token: string, preferred = DEFAULT_REPO_NAME): Promise<TokenCheck> {
+  const r = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    cache: 'no-store',
+  }).catch(() => null)
+  if (!r) return { error: 'reach' }
+  if (r.status === 401) return { error: 'rejected' }
+  if (!r.ok) return { error: 'status', status: r.status }
+  const repos = (await r.json()) as { full_name: string; name: string }[]
+  if (!repos.length) return { error: 'noRepos' }
+  const want = preferred.toLowerCase()
+  const hit = repos.find((x) => x.full_name.toLowerCase() === want || x.name.toLowerCase() === want)
+  if (hit) return { repo: hit.full_name }
+  if (repos.length === 1) return { error: 'confirm', repo: repos[0].full_name }
+  return { error: 'notFound', repos: repos.map((x) => x.full_name) }
+}
 export const BRANCH = 'main'
 
 export class AuthError extends Error {}
@@ -7,7 +50,7 @@ export class ConflictError extends Error {}
 export interface TreeEntry { path: string; mode: string; type: 'blob' | 'tree'; sha: string; size?: number }
 export interface NewEntry { path: string; mode?: string; type?: 'blob'; content?: string; sha?: string | null }
 
-export function client(token: string, repo = DATA_REPO) {
+export function client(token: string, repo = dataRepo()) {
   async function gh(path: string, init: RequestInit & { raw?: boolean } = {}) {
     const r = await fetch(`https://api.github.com/repos/${repo}${path}`, {
       ...init,
