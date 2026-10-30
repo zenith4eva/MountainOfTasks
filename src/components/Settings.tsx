@@ -7,6 +7,7 @@ import { getApi, orphans, previewAt, purge, restore } from '../lib/sync'
 import { deleteBoard, renameBoard, updateColumn, updateLabel } from '../lib/actions'
 import type { State } from '../lib/model'
 import { LABEL_COLORS, LabelPill, ago, fmtSize, fmtTime } from './ui'
+import { BackgroundPicker } from './Board'
 import { LANGS, systemLang, t, tn, type Lang } from '../i18n'
 import { setLanguage } from './LangGate'
 
@@ -45,6 +46,7 @@ export function Settings({ state, token, onPreview, onLock, onReplaceToken }: {
   const bio = useKv('bio', null)
   const bioOk = useQuery({ queryKey: ['bioSupported'], queryFn: bioSupported })
   const [bioErr, setBioErr] = useState('')
+  const [bgBoard, setBgBoard] = useState<string | null>(null)
   const boards = Object.values(state.boards)
 
   return (
@@ -124,6 +126,7 @@ export function Settings({ state, token, onPreview, onLock, onReplaceToken }: {
             <div className="flex items-center gap-2">
               <input className="field h-8 flex-1" defaultValue={b.name} disabled={b.deleted} aria-label={t('renameX', { name: b.name })}
                 onBlur={(e) => e.target.value.trim() && e.target.value !== b.name && renameBoard(b.id, e.target.value.trim())} />
+              {!b.deleted && <button className="btn btn-quiet h-8" onClick={() => setBgBoard(b.id)}>{t('background')}</button>}
               <button className={`btn btn-ghost h-8 ${b.deleted ? '' : 'text-negative'}`} onClick={() => deleteBoard(b.id, !b.deleted)}>{b.deleted ? t('restore') : t('delete')}</button>
             </div>
             {Object.values(b.columns).filter((c) => c.archived).map((c) => (
@@ -136,6 +139,7 @@ export function Settings({ state, token, onPreview, onLock, onReplaceToken }: {
         ))}
       </Section>
 
+      {bgBoard && state.boards[bgBoard] && <BackgroundPicker board={state.boards[bgBoard]} onClose={() => setBgBoard(null)} />}
       {token ? <History onPreview={onPreview} /> : null}
       {token ? <Storage state={state} /> : null}
     </div>
