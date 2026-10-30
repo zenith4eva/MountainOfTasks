@@ -365,4 +365,21 @@ export default {
   obOrPick: 'Oder ein Repo nehmen, das das Token sieht:',
   obConnected: 'Verbunden mit {repo}',
   obFilled: 'ausgefüllt',
+
+  // background look
+  bgLayout: 'Anordnung',
+  bgModeFill: 'Füllen',
+  bgModeFillHint: 'Füllt das ganze Board und schneidet die Ränder ab. Der Punkt unten bestimmt, was sichtbar bleibt.',
+  bgModeFit: 'Ganz zeigen',
+  bgModeFitHint: 'Zeigt das ganze Bild; der Rand ist eine unscharfe Kopie.',
+  bgModeTile: 'Kacheln',
+  bgModeTileHint: 'Wiederholt das Bild als Muster.',
+  bgFocus: 'Fokuspunkt',
+  bgFocusHint: 'Zieh den Punkt auf den Teil, der auf jedem Bildschirm sichtbar bleiben soll.',
+  bgDim: 'Abdunkeln',
+  bgTileSize: 'Kachelgröße',
+  bgPreview: 'Vorschau',
+  bgDesktop: 'Desktop',
+  bgPhone: 'Smartphone',
+  bgApply: 'Übernehmen',
 } satisfies Dict

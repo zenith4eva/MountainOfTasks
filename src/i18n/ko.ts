@@ -365,4 +365,21 @@ export default {
   obOrPick: '또는 토큰이 볼 수 있는 저장소 사용:',
   obConnected: '{repo}에 연결됨',
   obFilled: '채워짐',
+
+  // background look
+  bgLayout: '배치',
+  bgModeFill: '채우기',
+  bgModeFillHint: '보드 전체를 채우고 가장자리를 잘라 냅니다. 아래 점이 화면에 남을 부분을 정합니다.',
+  bgModeFit: '전체 보기',
+  bgModeFitHint: '사진 전체를 보여 주고, 남는 공간은 흐리게 처리한 사본으로 채웁니다.',
+  bgModeTile: '바둑판',
+  bgModeTileHint: '사진을 무늬처럼 반복합니다.',
+  bgFocus: '초점',
+  bgFocusHint: '어느 화면에서도 보여야 할 부분으로 점을 끌어다 놓으세요.',
+  bgDim: '어둡게',
+  bgTileSize: '타일 크기',
+  bgPreview: '미리 보기',
+  bgDesktop: '데스크톱',
+  bgPhone: '휴대폰',
+  bgApply: '적용',
 } satisfies Dict

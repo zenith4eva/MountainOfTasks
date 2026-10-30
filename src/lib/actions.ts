@@ -23,15 +23,16 @@ export const setBackground = (board: Board, background: Background | null) =>
   emit('board.update', { boardId: board.id, fields: { settings: { ...board.settings, background } } })
 
 // ponytail: replaced background files stay in the repo; list them in Storage if it ever matters.
-export async function uploadBackground(board: Board, raw: File) {
+/** Stages a file as a background draft (pending upload, previewable). Apply it with setBackground. */
+export async function stageBackground(board: Board, raw: File): Promise<Background | undefined> {
   const f = raw.type.startsWith('image/') ? await shrinkImage(raw, 2560) : raw
-  if (f.size > MAX_BYTES) return alert(t('tooLarge', { name: f.name }))
+  if (f.size > MAX_BYTES) { alert(t('tooLarge', { name: f.name })); return }
   if (f.size > WARN_BYTES && !confirm(t('largeConfirm', { name: f.name, mb: (f.size / 1048576).toFixed(0) }))) return
   const safe = f.name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file'
   const path = `backgrounds/${board.id}/${uid()}-${safe}`
   const blob = await gitBlobSha(new Uint8Array(await f.arrayBuffer()))
   await db.blobs.put({ path, cardId: board.id, data: f })
-  await setBackground(board, { kind: 'file', path, blob, mime: f.type || 'application/octet-stream' })
+  return { kind: 'file', path, blob, mime: f.type || 'application/octet-stream' }
 }
 export const deleteBoard = (boardId: string, deleted = true) => emit('board.update', { boardId, fields: { deleted } })
 

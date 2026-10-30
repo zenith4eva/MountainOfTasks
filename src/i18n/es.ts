@@ -365,4 +365,21 @@ export default {
   obOrPick: 'O usa un repositorio que el token sí ve:',
   obConnected: 'Conectado a {repo}',
   obFilled: 'rellenado',
+
+  // background look
+  bgLayout: 'Distribución',
+  bgModeFill: 'Rellenar',
+  bgModeFillHint: 'Cubre todo el tablero y recorta los bordes. El punto de abajo decide qué queda a la vista.',
+  bgModeFit: 'Mostrar entera',
+  bgModeFitHint: 'Muestra la imagen completa; el espacio de alrededor es una copia desenfocada.',
+  bgModeTile: 'Mosaico',
+  bgModeTileHint: 'Repite la imagen como un patrón.',
+  bgFocus: 'Punto focal',
+  bgFocusHint: 'Arrastra el punto a la parte que debe verse en cualquier pantalla.',
+  bgDim: 'Oscurecer',
+  bgTileSize: 'Tamaño del mosaico',
+  bgPreview: 'Vista previa',
+  bgDesktop: 'Ordenador',
+  bgPhone: 'Móvil',
+  bgApply: 'Aplicar',
 } satisfies Dict

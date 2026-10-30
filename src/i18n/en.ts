@@ -378,4 +378,21 @@ export default {
   obOrPick: 'Or use a repo the token can see:',
   obConnected: 'Connected to {repo}',
   obFilled: 'filled in',
+
+  // background look
+  bgLayout: 'Layout',
+  bgModeFill: 'Fill',
+  bgModeFillHint: 'Fills the whole board and crops the edges. The dot below decides what stays in view.',
+  bgModeFit: 'Show all',
+  bgModeFitHint: 'Shows the whole picture; the space around it is a blurred copy.',
+  bgModeTile: 'Tile',
+  bgModeTileHint: 'Repeats the picture as a pattern.',
+  bgFocus: 'Focal point',
+  bgFocusHint: 'Drag the dot onto the part that must stay visible on every screen.',
+  bgDim: 'Dim',
+  bgTileSize: 'Tile size',
+  bgPreview: 'Preview',
+  bgDesktop: 'Desktop',
+  bgPhone: 'Phone',
+  bgApply: 'Apply',
 } as const

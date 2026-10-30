@@ -365,4 +365,21 @@ export default {
   obOrPick: 'Ou use um repositório que o token enxerga:',
   obConnected: 'Conectado a {repo}',
   obFilled: 'preenchido',
+
+  // background look
+  bgLayout: 'Layout',
+  bgModeFill: 'Preencher',
+  bgModeFillHint: 'Cobre o quadro inteiro e corta as bordas. O ponto abaixo decide o que fica visível.',
+  bgModeFit: 'Mostrar inteira',
+  bgModeFitHint: 'Mostra a imagem inteira; o espaço em volta é uma cópia desfocada.',
+  bgModeTile: 'Lado a lado',
+  bgModeTileHint: 'Repete a imagem como um padrão.',
+  bgFocus: 'Ponto focal',
+  bgFocusHint: 'Arraste o ponto para a parte que deve aparecer em qualquer tela.',
+  bgDim: 'Escurecer',
+  bgTileSize: 'Tamanho do bloco',
+  bgPreview: 'Prévia',
+  bgDesktop: 'Computador',
+  bgPhone: 'Celular',
+  bgApply: 'Aplicar',
 } satisfies Dict

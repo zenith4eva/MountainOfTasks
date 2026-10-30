@@ -366,4 +366,21 @@ export default {
   obOrPick: 'Ou utilisez un dépôt que le jeton voit :',
   obConnected: 'Connecté à {repo}',
   obFilled: 'rempli',
+
+  // background look
+  bgLayout: 'Disposition',
+  bgModeFill: 'Remplir',
+  bgModeFillHint: 'Couvre tout le tableau et rogne les bords. Le point ci-dessous décide de ce qui reste visible.',
+  bgModeFit: 'Tout afficher',
+  bgModeFitHint: 'Affiche l’image entière ; l’espace autour est une copie floutée.',
+  bgModeTile: 'Mosaïque',
+  bgModeTileHint: 'Répète l’image comme un motif.',
+  bgFocus: 'Point focal',
+  bgFocusHint: 'Faites glisser le point sur la partie qui doit rester visible sur tous les écrans.',
+  bgDim: 'Assombrir',
+  bgTileSize: 'Taille des motifs',
+  bgPreview: 'Aperçu',
+  bgDesktop: 'Ordinateur',
+  bgPhone: 'Téléphone',
+  bgApply: 'Appliquer',
 } satisfies Dict

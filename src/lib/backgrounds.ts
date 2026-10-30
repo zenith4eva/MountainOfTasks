@@ -1,8 +1,33 @@
+/**
+ * How a picture fills the board (after the Windows wallpaper modes, minus Stretch and Center):
+ * fill = cover and crop, kept on the focal point; fit = the whole picture over a blurred copy; tile = repeat.
+ */
+export type Fit = 'fill' | 'fit' | 'tile'
+
+/** Optional so backgrounds saved before these existed keep looking the same (fill, centred, no dim). */
+export interface Look {
+  fit?: Fit
+  focus?: { x: number; y: number } // 0..1 in the picture; the point a crop keeps in view
+  dim?: number // 0..0.6 black overlay so cards stay readable on busy pictures
+  tile?: number // tile width in px
+}
+
 /** Board background: a CSS preset, a file in the data repo, or a URL. Lives in `board.settings.background`. */
-export type Background =
+export type Background = (
   | { kind: 'preset'; id: string }
   | { kind: 'file'; path: string; blob: string; mime: string }
   | { kind: 'url'; url: string }
+) & Look
+
+export const DEFAULT_TILE = 320
+export const lookOf = (bg: Background) => ({
+  fit: bg.fit ?? 'fill',
+  focus: bg.focus ?? { x: 0.5, y: 0.5 },
+  dim: bg.dim ?? 0,
+  tile: bg.tile ?? DEFAULT_TILE,
+})
+/** CSS position that keeps the focal point in view: at x% the picture's x% point meets the box's x% point. */
+export const focusPos = (f: { x: number; y: number }) => `${(f.x * 100).toFixed(1)}% ${(f.y * 100).toFixed(1)}%`
 
 export interface Preset { id: string; name: string; css: string; animated?: boolean }
 

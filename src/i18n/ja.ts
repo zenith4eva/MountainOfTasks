@@ -365,4 +365,21 @@ export default {
   obOrPick: 'または、トークンが見られるリポジトリを使う:',
   obConnected: '{repo} に接続しました',
   obFilled: '入力済み',
+
+  // background look
+  bgLayout: 'レイアウト',
+  bgModeFill: '全体に表示',
+  bgModeFillHint: 'ボード全体を埋め、端を切り取ります。下の点で、画面に残す部分を決めます。',
+  bgModeFit: '全体を表示',
+  bgModeFitHint: '写真全体を表示し、周りはぼかした同じ写真で埋めます。',
+  bgModeTile: 'タイル',
+  bgModeTileHint: '写真を模様のように繰り返します。',
+  bgFocus: 'フォーカス',
+  bgFocusHint: 'どの画面でも見せたい部分に点をドラッグしてください。',
+  bgDim: '暗く',
+  bgTileSize: 'タイルの大きさ',
+  bgPreview: 'プレビュー',
+  bgDesktop: 'デスクトップ',
+  bgPhone: 'スマホ',
+  bgApply: '適用',
 } satisfies Dict

@@ -7,8 +7,9 @@ import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyb
 import { CSS } from '@dnd-kit/utilities'
 import { keyAt, sortByPos } from '../lib/frac'
 import type { Attachment, Board, Card, Column, Priority, State } from '../lib/model'
-import { addCard, addColumn, moveCard, setBackground, updateColumn, uploadBackground } from '../lib/actions'
-import { PRESETS, isVideo, presetById, type Background } from '../lib/backgrounds'
+import { addCard, addColumn, moveCard, updateColumn } from '../lib/actions'
+import type { Background } from '../lib/backgrounds'
+import { BoardBackground } from './Background'
 import { Icon, LabelPill, MenuItem, Modal, Popover, fmtDay, fmtMonth, fmtMonthShort, localDay, priorityName, today, useAttachmentUrl } from './ui'
 import { t } from '../i18n'
 
@@ -182,65 +183,6 @@ export function BoardView({ state, boardId, readOnly, filter = noFilter, onOpen 
         {dragCard && <CardTile card={dragCard} state={state} overlay />}
       </DragOverlay>
     </DndContext>
-  )
-}
-
-export function BoardBackground({ bg }: { bg: Background }) {
-  if (bg.kind === 'preset') {
-    const p = presetById(bg.id)
-    return p ? <div aria-hidden className={`absolute inset-0 -z-10 ${p.animated ? 'bg-anim' : ''}`} style={{ background: p.css }} /> : null
-  }
-  return <MediaBackground bg={bg} />
-}
-
-function MediaBackground({ bg }: { bg: Exclude<Background, { kind: 'preset' }> }) {
-  const { url: fileUrl } = useAttachmentUrl(bg.kind === 'file' ? bg : undefined)
-  const url = bg.kind === 'url' ? bg.url : fileUrl
-  if (!url) return null
-  return isVideo(bg.kind === 'url' ? bg.url : bg.mime)
-    ? <video aria-hidden className="absolute inset-0 -z-10 h-full w-full object-cover" src={url} autoPlay muted loop playsInline />
-    : <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url("${url}")` }} />
-}
-
-export function BackgroundPicker({ board, onClose }: { board: Board; onClose: () => void }) {
-  const cur = (board.settings.background ?? null) as Background | null
-  const [url, setUrl] = useState('')
-  const isPreset = (id: string) => cur?.kind === 'preset' && cur.id === id
-  const ring = 'ring-2 ring-ink ring-offset-2 ring-offset-surface'
-  const okUrl = /^https?:\/\/\S+$/.test(url.trim())
-  return (
-    <Modal onClose={onClose} label={t('background')}>
-      <div className="p-5 sm:p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <h2 className="text-[20px] font-semibold">{t('background')}</h2>
-          <button onClick={onClose} aria-label={t('close')} className="rounded p-1.5 text-muted hover:bg-raised"><Icon name="x" size={18} /></button>
-        </div>
-        <h3 className="mb-2 text-xs font-medium text-muted">{t('bgPresets')}</h3>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          <button onClick={() => setBackground(board, null)} aria-pressed={!cur}
-            className={`flex h-16 items-center justify-center rounded-[8px] bg-raised text-xs text-muted ${!cur ? ring : ''}`}>{t('bgNone')}</button>
-          {PRESETS.map((p) => (
-            <button key={p.id} onClick={() => setBackground(board, { kind: 'preset', id: p.id })} aria-label={p.name} aria-pressed={isPreset(p.id)}
-              className={`relative h-16 overflow-hidden rounded-[8px] ${isPreset(p.id) ? ring : ''}`}>
-              <span className={`absolute inset-0 ${p.animated ? 'bg-anim' : ''}`} style={{ background: p.css }} />
-              <span className="absolute bottom-1 left-2 text-[11px] font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,.6)]">{p.name}</span>
-            </button>
-          ))}
-        </div>
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <label className="btn btn-quiet cursor-pointer">
-            <Icon name="image" size={14} /> {t('bgUpload')}
-            <input type="file" accept="image/*,video/*" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadBackground(board, f); e.target.value = '' }} />
-          </label>
-        </div>
-        <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (okUrl) { setBackground(board, { kind: 'url', url: url.trim() }); setUrl('') } }}>
-          <input className="field" placeholder={t('bgUrl')} value={url} onChange={(e) => setUrl(e.target.value)} aria-label={t('bgUrl')} />
-          <button className="btn btn-primary shrink-0" disabled={!okUrl}>{t('bgUse')}</button>
-        </form>
-        {cur && cur.kind !== 'preset' && <div className="relative isolate mt-4 h-28 overflow-hidden rounded-[8px] bg-raised"><BoardBackground bg={cur} /></div>}
-      </div>
-    </Modal>
   )
 }
 

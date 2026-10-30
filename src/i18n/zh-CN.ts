@@ -365,4 +365,21 @@ export default {
   obOrPick: '或者使用令牌可以访问的仓库：',
   obConnected: '已连接到 {repo}',
   obFilled: '已填好',
+
+  // background look
+  bgLayout: '布局',
+  bgModeFill: '填充',
+  bgModeFillHint: '铺满整个看板并裁掉边缘。下面的圆点决定保留哪一部分。',
+  bgModeFit: '完整显示',
+  bgModeFitHint: '显示整张图片，周围用模糊的副本填满。',
+  bgModeTile: '平铺',
+  bgModeTileHint: '把图片当作图案重复排列。',
+  bgFocus: '焦点',
+  bgFocusHint: '把圆点拖到在任何屏幕上都要保留的部分。',
+  bgDim: '调暗',
+  bgTileSize: '平铺大小',
+  bgPreview: '预览',
+  bgDesktop: '桌面',
+  bgPhone: '手机',
+  bgApply: '应用',
 } satisfies Dict

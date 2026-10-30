@@ -365,4 +365,21 @@ export default {
   obOrPick: '或使用權杖可存取的儲存庫：',
   obConnected: '已連結到 {repo}',
   obFilled: '已填好',
+
+  // background look
+  bgLayout: '版面',
+  bgModeFill: '填滿',
+  bgModeFillHint: '鋪滿整個看板並裁掉邊緣。下方的圓點決定保留哪個部分。',
+  bgModeFit: '完整顯示',
+  bgModeFitHint: '顯示整張圖片，周圍以模糊的副本填滿。',
+  bgModeTile: '並排',
+  bgModeTileHint: '將圖片當作圖樣重複排列。',
+  bgFocus: '焦點',
+  bgFocusHint: '把圓點拖到在任何螢幕上都要保留的部分。',
+  bgDim: '調暗',
+  bgTileSize: '圖塊大小',
+  bgPreview: '預覽',
+  bgDesktop: '桌面',
+  bgPhone: '手機',
+  bgApply: '套用',
 } satisfies Dict

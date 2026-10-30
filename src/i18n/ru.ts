@@ -384,4 +384,21 @@ export default {
   obOrPick: 'Или выберите репозиторий, который видит токен:',
   obConnected: 'Подключено к {repo}',
   obFilled: 'заполнено',
+
+  // background look
+  bgLayout: 'Расположение',
+  bgModeFill: 'Заполнить',
+  bgModeFillHint: 'Заполняет всю доску и обрезает края. Точка ниже определяет, что останется на виду.',
+  bgModeFit: 'Показать целиком',
+  bgModeFitHint: 'Показывает изображение целиком, а вокруг — размытая копия.',
+  bgModeTile: 'Плитка',
+  bgModeTileHint: 'Повторяет изображение узором.',
+  bgFocus: 'Точка фокуса',
+  bgFocusHint: 'Перетащите точку на ту часть, которая должна быть видна на любом экране.',
+  bgDim: 'Затемнение',
+  bgTileSize: 'Размер плитки',
+  bgPreview: 'Предпросмотр',
+  bgDesktop: 'Компьютер',
+  bgPhone: 'Телефон',
+  bgApply: 'Применить',
 } satisfies Dict

@@ -45,13 +45,17 @@ test('board background: preset applies, persists, and can be cleared', async ({ 
   await page.goto('./')
   await page.getByRole('button', { name: /^Start now/ }).click()
   await page.getByRole('button', { name: 'Create a board' }).click()
-  const pick = async (name: string) => {
+  // The picker edits a draft: Escape cancels, Apply commits.
+  const pick = async (name: string, commit = true) => {
     await page.getByRole('button', { name: 'Settings' }).click()
     await page.getByRole('button', { name: 'Background' }).click()
     await page.getByRole('button', { name, exact: true }).click()
-    await page.keyboard.press('Escape')
+    if (commit) await page.getByRole('button', { name: 'Apply' }).click()
+    else await page.keyboard.press('Escape')
     await page.getByRole('button', { name: 'Boards' }).click()
   }
+  await pick('Aurora', false)
+  await expect(page.locator('main .bg-anim')).toHaveCount(0)
   await pick('Aurora')
   await expect(page.locator('main .bg-anim')).toHaveCount(1)
   await page.reload()
