@@ -4,7 +4,7 @@ import { commitMessage, eventPath, merge, replay, snapshot, type Ev, type State 
 import { b64, gitBlobSha } from './crypto'
 
 let api: Client | null = null
-export const setToken = (t: string | null) => { api = t ? client(t) : null }
+export const setToken = (t: string | null, repo?: string) => { api = t ? client(t, repo) : null }
 export const getApi = () => {
   if (!api) throw new Error('Locked')
   return api

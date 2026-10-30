@@ -40,7 +40,7 @@ describe('reducer', () => {
   it('soft-deletes and keeps comments, attachments', () => {
     const s = replay([...base(),
       ev('comment.add', { boardId: 'b', cardId: 'c', commentId: 'm', text: 'hi' }, 5),
-      ev('attachment.added', { boardId: 'b', cardId: 'c', att: { id: 'x', name: 'a.png', size: 1, mime: 'image/png', path: 'p', sha256: 'h' } }, 6),
+      ev('attachment.added', { boardId: 'b', cardId: 'c', att: { id: 'x', name: 'a.png', size: 1, mime: 'image/png', path: 'p', blob: 'b', sha256: 'h' } }, 6),
       ev('card.update', { boardId: 'b', cardId: 'c', fields: { cover: 'x' } }, 7),
       ev('attachment.removed', { boardId: 'b', cardId: 'c', attId: 'x' }, 8),
       ev('card.update', { boardId: 'b', cardId: 'c', fields: { deleted: true } }, 9)])

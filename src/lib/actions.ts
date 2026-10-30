@@ -1,6 +1,6 @@
 import { db, emit, emitMany, uid } from './db'
 import { between, sortByPos } from './frac'
-import { sha256Hex } from './crypto'
+import { gitBlobSha, sha256Hex } from './crypto'
 import type { Card, Column, EvType, State } from './model'
 
 export async function createBoard(name: string) {
@@ -59,11 +59,13 @@ export async function attachFiles(card: Card, files: File[]): Promise<{ id: stri
     const id = uid()
     const safe = f.name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file'
     const path = `attachments/${card.id}/${id}-${safe}`
-    const sha256 = await sha256Hex(await f.arrayBuffer())
+    const bytes = new Uint8Array(await f.arrayBuffer())
+    const sha256 = await sha256Hex(bytes)
+    const blob = await gitBlobSha(bytes)
     await db.blobs.put({ path, cardId: card.id, data: f })
     await emit('attachment.added', {
       boardId: card.boardId, cardId: card.id,
-      att: { id, name: f.name || 'pasted', size: f.size, mime: f.type || 'application/octet-stream', path, sha256 },
+      att: { id, name: f.name || 'pasted', size: f.size, mime: f.type || 'application/octet-stream', path, blob, sha256 },
     })
     ids.push({ id, mime: f.type })
   }

@@ -42,6 +42,7 @@ export interface Attachment {
   size: number
   mime: string
   path: string // repo path of the stored file
+  blob: string // git blob sha; read through git/blobs, since the contents API mangles binary
   sha256: string
   ts: number
   removed: boolean

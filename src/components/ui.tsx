@@ -152,8 +152,7 @@ export function useAttachmentUrl(att: Attachment | undefined): { url: string | n
     let live = true
     if (!urlCache.has(att.path)) {
       urlCache.set(att.path, (async () => {
-        const b = await getApi().fileBlob(att.path)
-        if (!b) throw new Error('missing')
+        const b = await getApi().blobBytes(att.blob)
         return URL.createObjectURL(new Blob([b], { type: att.mime }))
       })().catch((e) => { urlCache.delete(att.path); throw e }))
     }
@@ -177,7 +176,7 @@ export function Markdown({ text, attachments }: { text: string; attachments: Rec
       if (!att) return
       try {
         const pending = await db.blobs.get(att.path)
-        const b = pending?.data ?? (await getApi().fileBlob(att.path))
+        const b = pending?.data ?? (await getApi().blobBytes(att.blob))
         if (b) img.src = URL.createObjectURL(b)
       } catch { /* offline or locked: leave the alt text */ }
     })

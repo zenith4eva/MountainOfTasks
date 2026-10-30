@@ -46,9 +46,9 @@ export function client(token: string, repo = DATA_REPO) {
       const r: Response = await gh(`/git/blobs/${sha}`, { raw: true })
       return r.blob()
     },
-    async fileBlob(path: string, ref = BRANCH): Promise<Blob | null> {
+    async fileText(path: string, ref = BRANCH): Promise<string | null> {
       const r: Response | null = await gh(`/contents/${encodeURI(path)}?ref=${ref}`, { raw: true })
-      return r ? r.blob() : null
+      return r ? r.text() : null
     },
     async createBlob(base64: string): Promise<string> {
       return (await post('/git/blobs', { content: base64, encoding: 'base64' })).sha
