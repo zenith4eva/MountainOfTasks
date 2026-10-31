@@ -2,7 +2,7 @@
 
 [![Deploy to Pages](https://github.com/zenith4eva/MountainOfTasks/actions/workflows/deploy.yml/badge.svg)](https://github.com/zenith4eva/MountainOfTasks/actions/workflows/deploy.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A personal, local-first kanban board (Trello-style) that runs as a static PWA on GitHub Pages and syncs to a **private GitHub repo** you own. No server, no third-party backend: every change is an event committed to git, so you get full history, rollback and multi-device sync for free.
+A personal, local-first kanban board that runs as a static PWA on GitHub Pages and syncs to a **private GitHub repo** you own. No server, no third-party backend: every change is an event committed to git, so you get full history, rollback and multi-device sync for free.
 
 **Live app:** https://zenith4eva.github.io/MountainOfTasks/
 
